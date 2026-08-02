@@ -52,6 +52,18 @@ hard to reverse cheaply later — recorded here so they're not re-litigated by a
     one API key. The native-Supabase-Auth argument for `supabase-js` still applies if that gate ever
     gets adopted — Prisma doesn't block using `@supabase/supabase-js` alongside it later purely for
     Auth/Storage (see [[09-database-schema]]'s open questions on image storage).
+  - **Production incident (Aug 2026):** first real Vercel deployment crashed `/admin` with
+    Postgres `(EMAXCONN) max client connections reached, limit: 200`. Root cause was in
+    `src/lib/db/client.ts`: the `globalThis` singleton cache was gated `if (NODE_ENV !==
+    "production")` — a pattern copied from traditional single-process Node hosting, where you
+    *want* a fresh client in production (one stable process, created once) and only need the
+    dev-mode cache to survive hot-reload. On Vercel, "production" is many short-lived serverless
+    instances that can go **warm** and get reused across requests — gating the cache to dev-only
+    meant production never reused a pool at all, opening a brand-new one on every single call
+    (three per admin dashboard load, since Products/Categories/Themes fetch in parallel). Fixed by
+    caching unconditionally, plus `max: 1` on the pg.Pool (`DATABASE_URL` already points at
+    Supabase's transaction-mode pooler, which does its own multiplexing — each serverless instance
+    should hold as few real connections to it as possible, per Prisma's own serverless guidance).
 
 ## Layering (why "loosely coupled services")
 

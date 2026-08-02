@@ -15,6 +15,16 @@ import { PrismaClient } from "@/generated/prisma/client";
  * build-time "collect page data" step throw just from *importing* this module (it evaluates
  * top-level statements even for routes that are dynamic and never render at build time), even
  * though DATABASE_URL is only ever needed once a request actually comes in.
+ *
+ * The globalThis cache is unconditional — NOT dev-only. On Vercel, "production" still means many
+ * short-lived serverless function instances, each of which can be reused ("warm") across several
+ * requests; the whole point of caching here is to let a warm instance reuse its pool instead of
+ * opening a new one per request. Gating this to dev-only (a common pattern for traditional
+ * single-process Node hosting, wrong here) meant production created a brand-new pg.Pool on every
+ * single call — this is what caused "max client connections reached" in production; `max: 1`
+ * below is the second half of the fix, since DATABASE_URL already points at Supabase's
+ * transaction-mode pooler (Supavisor), which does its own multiplexing — each serverless instance
+ * should hold as few real connections to it as possible, per Prisma's own serverless guidance.
  */
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
@@ -29,12 +39,10 @@ export function getPrismaClient(): PrismaClient {
     );
   }
 
-  const adapter = new PrismaPg({ connectionString });
+  const adapter = new PrismaPg({ connectionString, max: 1 });
   const client = new PrismaClient({ adapter });
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-  }
+  globalForPrisma.prisma = client;
 
   return client;
 }
