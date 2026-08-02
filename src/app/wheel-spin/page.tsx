@@ -36,7 +36,10 @@ export default async function WheelSpinPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>{wheelPool.name}</h1>
-        <p>One spin, one guaranteed prize. No repeats, no losers — just varying rarity.</p>
+        <p>
+          Try a preview spin below — no purchase needed. Every real order gets its own genuine
+          surprise, randomised to these exact published odds.
+        </p>
         <PriceTag price={wheelPool.price} />
       </header>
 

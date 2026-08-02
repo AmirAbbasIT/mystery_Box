@@ -21,9 +21,9 @@ mystery_box/
 │   │   │   ├── makeup-beauty/page.tsx
 │   │   │   └── stationery/page.tsx
 │   │   ├── mystery-eggs/
-│   │   │   ├── page.tsx
+│   │   │   ├── page.tsx                # DB-backed (PrizePool kind: "egg"), revalidate=60
 │   │   │   └── EggTierSelector.tsx   # route-colocated, not reused elsewhere
-│   │   ├── wheel-spin/page.tsx
+│   │   ├── wheel-spin/page.tsx          # DB-backed (PrizePool kind: "wheel"), revalidate=60
 │   │   ├── birthday-packages/
 │   │   │   ├── page.tsx
 │   │   │   ├── PackageCard.tsx        # route-colocated, shared by index/kids/adult-party

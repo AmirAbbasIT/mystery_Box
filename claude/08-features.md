@@ -2,8 +2,9 @@
 
 Living document — update this when features are added/changed, don't let it drift from the code.
 "Pages built" below is mostly Phase 1 (static mock data) but **`/`, `/shop`, the three category
-pages, and `/wheel-spin` are DB-backed now** — flagged individually in that table, not a clean
-split anymore. For the full Phase 2 plan, see [[09-database-schema]] and [[10-admin-panel]].
+pages, `/wheel-spin`, and `/mystery-eggs` are DB-backed now** — flagged individually in that table,
+not a clean split anymore. For the full Phase 2 plan, see [[09-database-schema]] and
+[[10-admin-panel]].
 
 ## Phase 2 — database + admin (in progress)
 
@@ -15,18 +16,17 @@ split anymore. For the full Phase 2 plan, see [[09-database-schema]] and [[10-ad
 | `/admin/products` | ✅ | List, create, edit, delete, real image upload (`ImagePicker`, multiple + alt text), plus a live preview panel (reuses the real `ProductCard` styles) that updates as the form is filled in |
 | `/admin/categories` | ✅ | List, create, edit, delete, real image upload (`ImagePicker`, single) — delete is blocked with a friendly message (not a crash) if products still reference the category |
 | `/admin/themes` | ✅ | List, create, edit, delete, plus a live colour-swatch preview — first real visual use of `colorSwatch` anywhere in the app (the storefront's filter chips don't use it) |
-| `/admin/prize-pools` | ✅ | List, create, edit, delete; nested prize-item editor (label/rarity/weight, ↑/↓ reorder, live odds %); real image upload; for `kind: "wheel"` a **live spinning preview** using the actual `WheelSpinLoader` component fed by the in-progress form state. Covers both `kind` values (wheel/egg) since it's one shared table, but only Wheel Spin is wired to the storefront so far. |
+| `/admin/prize-pools` | ✅ | List, create, edit, delete; nested prize-item editor (label/rarity/weight, ↑/↓ reorder, live odds %); real image upload; for `kind: "wheel"` a **live spinning preview** using the actual `WheelSpinLoader` component fed by the in-progress form state. Covers both `kind` values (wheel/egg) since it's one shared table — both are now wired to the storefront. |
 | Image storage | ✅ | Supabase Storage, public `catalogue-images` bucket (`node scripts/create-storage-bucket.mjs`) — not the database, not `public/images/`; see [[09-database-schema]] |
-| Storefront wired to DB | ✅ | `src/lib/catalogue.ts` — `/`, `/shop`, `/shop/{jewellery,makeup-beauty,stationery}`, `/wheel-spin` read real data now, not `src/data/`. ISR (`revalidate = 60`), not full SSR. |
+| Storefront wired to DB | ✅ | `src/lib/catalogue.ts` — `/`, `/shop`, `/shop/{jewellery,makeup-beauty,stationery}`, `/wheel-spin`, `/mystery-eggs` read real data now, not `src/data/`. ISR (`revalidate = 60`), not full SSR. |
 | `/admin/birthday-packages`, `/admin/seasonal-collections` | ⬜ | Not built — same pattern as Products/Categories/Themes/Prize Pools, see [[10-admin-panel]] |
-| Mystery Eggs storefront wiring | ⬜ | `PrizePool` rows with `kind: "egg"` — the admin CRUD already supports creating these, `/mystery-eggs` just doesn't read them yet (still `src/data/prize-pools.ts`) |
 | `/admin/custom-requests`, `/admin/orders`, `/admin/customers` | ⬜ | Phase 2b/2c, blocked on scope per [[10-admin-panel]] |
 
 **To run this locally:** copy `.env.local.example` to `.env.local`, fill in `DATABASE_URL`/
 `DIRECT_URL` from your Supabase project's connection strings and `SUPABASE_URL`/`SUPABASE_SECRET_KEY`
 (needed now for Storage, not just kept for later), run `npx prisma migrate deploy` (or `migrate
-reset` on a fresh empty dev database), `npx prisma db seed` to seed Categories/Themes/the Luxury
-Wheel Spin prize pool, `node scripts/create-storage-bucket.mjs` to create the image bucket,
+reset` on a fresh empty dev database), `npx prisma db seed` to seed Categories/Themes/the 5 prize
+pools (1 wheel + 4 egg tiers), `node scripts/create-storage-bucket.mjs` to create the image bucket,
 generate a PIN hash, then `npm run dev` and visit `/admin/login`.
 
 ## Pages built
@@ -36,7 +36,7 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
 | `/` | ✅ **DB-backed** | Hero, Shop by category (3 real categories from Postgres + 3 hardcoded extras: eggs/wheel/birthday), How it works, Testimonials, Trust signals |
 | `/shop` | ✅ **DB-backed** | 3 category cards + bestsellers grid, real Products/Categories |
 | `/shop/jewellery`, `/shop/makeup-beauty`, `/shop/stationery` | ✅ **DB-backed** | Theme filter chips + price sort (still client-side, now over real data), "Peek inside" transparency modal per product, `notFound()` if the category row is missing instead of a crash |
-| `/mystery-eggs` | ✅ | Tier selector (single/5/10/15), interactive crack-to-reveal per egg, odds accordion — still `src/data/prize-pools.ts` |
+| `/mystery-eggs` | ✅ **DB-backed** | Tier selector (single/5/10/15), interactive crack-to-reveal per egg, odds accordion, real `PrizePool`/`PrizeItem` (`kind: "egg"`); friendly "check back soon" empty state if no egg tiers exist |
 | `/wheel-spin` | ✅ **DB-backed** | Interactive GSAP wheel, confetti + reveal on win, published odds table, real `PrizePool`/`PrizeItem`; friendly "check back soon" empty state (not a crash) if no wheel pool exists |
 | `/birthday-packages` | ✅ | Index linking to kids/adult-party |
 | `/birthday-packages/kids` | ✅ | Kids packages + custom request builder (defaults to "kids") |
@@ -62,6 +62,17 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
   error, for instance) — see [[02-architecture]]'s Data flow section.
 - `ProductCard` shows a plain placeholder box instead of crashing if a product has zero images —
   real DB products aren't guaranteed to have one the way every mock product always did.
+- **Reveal experience honesty (Aug 2026 decision):** both `/wheel-spin` and `/mystery-eggs` state
+  plainly ("try a preview... no purchase needed... every real order gets its own genuine surprise")
+  that the on-screen crack/spin reveal is a preview of the published odds, not a guarantee of what
+  ships. This was a deliberate call, not an oversight: the reveal is a client-side `pickWeighted()`
+  pick with no link to any real order (there's no checkout yet — Phase 2c), so implying it
+  determines what a customer receives would be misleading, especially given kids/teens are a named
+  audience and this brand already treats odds-transparency as UK-consumer-law-motivated rather than
+  decorative (see [[06-entities-data-model]]). The fun interactive mechanic stays — it's explicit
+  brand positioning (see [[01-overview]]) — only the framing changed. Revisit if/when checkout
+  exists and a real order-linked reveal (the pick happens server-side at purchase, then fulfilment
+  packs that specific prize) becomes viable — not before.
 
 ## Explicitly out of scope for Phase 1
 

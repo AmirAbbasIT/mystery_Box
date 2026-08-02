@@ -38,15 +38,16 @@ reference via `themeIds`, so the storefront can filter across categories by them
 that theme IDs are real DB UUIDs (not the old `"theme-kawaii-pastels"`-style mock IDs), both
 instead take `themes` as a prop from a Server Component ancestor that calls `getThemes()`.
 
-## PrizePool / PrizeItem (`types/prize-pool.ts` — `kind: "wheel"` DB-backed via `lib/catalogue.ts`, `kind: "egg"` still `data/prize-pools.ts`)
+## PrizePool / PrizeItem (`types/prize-pool.ts`, DB-backed via `lib/catalogue.ts` — both kinds)
 
 Backs **both** Wheel Spin and Mystery Eggs — `kind: "wheel" | "egg"` distinguishes them, same table
-in Postgres (`prize_pools`/`prize_items`) either way. `quantity` is set for egg tiers (1/5/10/15)
-and `undefined`/`null` for the wheel. Each `PrizeItem` has a `weight` (relative odds, now genuinely
+in Postgres (`prize_pools`/`prize_items`) either way, and both are fully wired to the storefront now
+(`getWheelPrizePool()` / `getEggPrizePools()`). `quantity` is set for egg tiers (1/5/10/15) and
+`undefined`/`null` for the wheel. Each `PrizeItem` has a `weight` (relative odds, genuinely
 admin-editable at `/admin/prize-pools` without touching code — the nested prize-item editor
 supports reordering and shows live odds %) and a `rarity` (`common | uncommon | rare | jackpot`,
 drives the `RevealPanel` badge color/label). `pickWeighted()` in `lib/utils.ts` still does the
-actual weighted-random selection **client-side** for both kinds — wiring Wheel Spin to the database
+actual weighted-random selection **client-side** for both kinds — wiring these to the database
 changed where the prize *data* comes from, not where the pick happens; there is still no
 server-side odds enforcement (see [[07-roadmap]] — that remains a real Phase 2/3 concern, since a
 motivated user could inspect the client-side weights before spinning).

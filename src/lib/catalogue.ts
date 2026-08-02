@@ -13,8 +13,8 @@ import type { Prisma } from "@/generated/prisma/client";
  * exact same Product/Category/Theme/PrizePool shapes the storefront components already expect, so
  * components needed zero shape changes — only their data source changed.
  *
- * BirthdayPackage/SeasonalCollection, and Mystery Eggs (PrizePool kind: "egg") are NOT here yet —
- * no admin CRUD or seed data for those specifically, so their pages still read src/data/*.ts.
+ * BirthdayPackage/SeasonalCollection are NOT here yet — no admin CRUD for those, so their pages
+ * still read src/data/*.ts.
  */
 
 const PRODUCT_INCLUDE = {
@@ -99,24 +99,18 @@ export async function getThemes(): Promise<Theme[]> {
   }));
 }
 
-/**
- * The single active Wheel Spin config — "first created wheel-kind pool", since there's no
- * `active`/featured flag on PrizePool and the storefront only ever shows one wheel at a time. If
- * multiple wheels/rotation ever becomes a real need, that's a schema addition, not a query change.
- */
-export async function getWheelPrizePool(): Promise<PrizePool | null> {
-  const row = await getPrismaClient().prizePool.findFirst({
-    where: { kind: "wheel" },
-    include: { prizeItems: { orderBy: { sortOrder: "asc" } } },
-    orderBy: { createdAt: "asc" },
-  });
-  if (!row) return null;
+const PRIZE_POOL_INCLUDE = {
+  prizeItems: { orderBy: { sortOrder: "asc" } },
+} satisfies Prisma.PrizePoolInclude;
 
+type PrizePoolWithItems = Prisma.PrizePoolGetPayload<{ include: typeof PRIZE_POOL_INCLUDE }>;
+
+function toPrizePool(row: PrizePoolWithItems): PrizePool {
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    kind: "wheel",
+    kind: row.kind as PrizePool["kind"],
     quantity: row.quantity ?? undefined,
     price: row.pricePence / 100,
     image: row.image,
@@ -127,4 +121,28 @@ export async function getWheelPrizePool(): Promise<PrizePool | null> {
       weight: item.weight.toNumber(),
     })),
   };
+}
+
+/**
+ * The single active Wheel Spin config — "first created wheel-kind pool", since there's no
+ * `active`/featured flag on PrizePool and the storefront only ever shows one wheel at a time. If
+ * multiple wheels/rotation ever becomes a real need, that's a schema addition, not a query change.
+ */
+export async function getWheelPrizePool(): Promise<PrizePool | null> {
+  const row = await getPrismaClient().prizePool.findFirst({
+    where: { kind: "wheel" },
+    include: PRIZE_POOL_INCLUDE,
+    orderBy: { createdAt: "asc" },
+  });
+  return row ? toPrizePool(row) : null;
+}
+
+/** All Mystery Egg tiers (single/5/10/15-pack), ordered smallest to largest by quantity. */
+export async function getEggPrizePools(): Promise<PrizePool[]> {
+  const rows = await getPrismaClient().prizePool.findMany({
+    where: { kind: "egg" },
+    include: PRIZE_POOL_INCLUDE,
+    orderBy: { quantity: "asc" },
+  });
+  return rows.map(toPrizePool);
 }
