@@ -1,0 +1,95 @@
+@use "../../../styles/abstracts" as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.wheelArea {
+  position: relative;
+  width: 300px;
+  height: 300px;
+}
+
+.disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: var(--shadow-lg), 0 0 0 8px var(--color-surface-alt), 0 0 0 12px var(--color-accent);
+  will-change: transform;
+}
+
+.segmentLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90px;
+  text-align: center;
+  font-size: rem(11px);
+  font-weight: 700;
+  color: var(--color-text-on-primary);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+  pointer-events: none;
+}
+
+.pointer {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 22px solid var(--color-secondary-dark);
+  z-index: 2;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 25%));
+}
+
+.hub {
+  @include flex-center;
+  @include focus-visible;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background-color: var(--color-surface-alt);
+  color: var(--color-secondary-dark);
+  font-weight: 800;
+  font-size: rem(15px);
+  letter-spacing: 0.04em;
+  box-shadow: var(--shadow-md);
+  z-index: 3;
+  transition: transform var(--transition-fast) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
+  }
+
+  @include reduced-motion {
+    &:hover:not(:disabled) {
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+.srOnly {
+  @include visually-hidden;
+}
+
+.resultArea {
+  width: 100%;
+  max-width: 320px;
+}

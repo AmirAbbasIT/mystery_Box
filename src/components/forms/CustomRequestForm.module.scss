@@ -1,0 +1,79 @@
+@use "../../styles/abstracts" as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 560px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+
+  @include tablet-up {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  label,
+  .legend {
+    font-weight: 700;
+    font-size: rem(14px);
+    color: var(--color-text);
+  }
+
+  input[type="text"],
+  input[type="email"],
+  textarea {
+    @include form-input;
+  }
+
+  input[type="range"] {
+    @include focus-visible;
+
+    width: 100%;
+    accent-color: var(--color-secondary);
+  }
+}
+
+.radioRow {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.radioLabel {
+  @include touch-target;
+
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+
+  input {
+    accent-color: var(--color-secondary);
+  }
+}
+
+.confirmation {
+  max-width: 480px;
+  padding: var(--space-6);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  h3 {
+    margin-bottom: var(--space-2);
+  }
+
+  p {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-4);
+  }
+}

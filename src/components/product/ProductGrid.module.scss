@@ -1,0 +1,22 @@
+@use "../../styles/abstracts" as *;
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+
+  @include tablet-up {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-5);
+  }
+
+  @include wide-up {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.empty {
+  padding: var(--space-8) 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}

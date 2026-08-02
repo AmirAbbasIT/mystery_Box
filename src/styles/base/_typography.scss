@@ -1,0 +1,55 @@
+@use "../abstracts" as *;
+
+html {
+  font-size: 100%;
+}
+
+body {
+  font-family: var(--font-family-body);
+  font-size: rem(16px);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-family-display);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--color-text);
+}
+
+h1 {
+  font-size: clamp(#{rem(32px)}, 4vw + 1rem, #{rem(56px)});
+}
+
+h2 {
+  font-size: clamp(#{rem(26px)}, 3vw + 1rem, #{rem(40px)});
+}
+
+h3 {
+  font-size: clamp(#{rem(22px)}, 2vw + 1rem, #{rem(30px)});
+}
+
+h4 {
+  font-size: clamp(#{rem(18px)}, 1.2vw + 1rem, #{rem(22px)});
+}
+
+p {
+  max-width: 65ch;
+}
+
+small {
+  font-size: rem(14px);
+}
+
+a {
+  @include focus-visible;
+}
+
+::selection {
+  background-color: var(--color-primary-light);
+  color: var(--color-text);
+}

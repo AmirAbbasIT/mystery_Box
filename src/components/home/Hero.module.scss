@@ -1,0 +1,85 @@
+@use "../../styles/abstracts" as *;
+
+.hero {
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-primary-light) 140%);
+  overflow: hidden;
+}
+
+.inner {
+  @include container;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-7);
+  padding-block: var(--space-8) var(--space-9);
+  text-align: center;
+
+  @include desktop-up {
+    flex-direction: row;
+    text-align: left;
+    padding-block: var(--space-9);
+  }
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 560px;
+
+  @include desktop-up {
+    align-items: flex-start;
+  }
+}
+
+.eyebrow {
+  font-weight: 700;
+  font-size: rem(13px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-secondary-dark);
+}
+
+.title {
+  font-size: clamp(#{rem(36px)}, 5vw + 1rem, #{rem(64px)});
+}
+
+.subtitle {
+  font-size: rem(18px);
+  color: var(--color-text-muted);
+  max-width: 48ch;
+}
+
+.ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+
+  @include desktop-up {
+    justify-content: flex-start;
+  }
+}
+
+.visual {
+  flex-shrink: 0;
+}
+
+.visualImage {
+  width: 260px;
+  height: 260px;
+  border-radius: var(--radius-lg);
+
+  @include tablet-up {
+    width: 340px;
+    height: 340px;
+  }
+
+  @include desktop-up {
+    width: 380px;
+    height: 380px;
+  }
+}

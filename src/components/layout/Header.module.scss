@@ -1,0 +1,109 @@
+@use "../../styles/abstracts" as *;
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background-color: var(--color-surface-alt);
+  box-shadow: 0 2px 12px rgb(59 37 69 / 8%);
+}
+
+.inner {
+  @include container;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+}
+
+.logo {
+  @include focus-visible;
+
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.desktopNav {
+  display: none;
+
+  @include desktop-up {
+    display: block;
+  }
+}
+
+.navList {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.navLink {
+  @include focus-visible;
+
+  font-weight: 700;
+  font-size: rem(15px);
+  color: var(--color-text);
+  position: relative;
+  padding-block: var(--space-2);
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--transition-base) var(--ease-standard);
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+  }
+
+  @include reduced-motion {
+    &::after {
+      transition: none;
+    }
+  }
+}
+
+.menuButton {
+  @include flex-center;
+  @include touch-target;
+  @include focus-visible;
+
+  flex-direction: column;
+  gap: 5px;
+  border-radius: var(--radius-sm);
+
+  @include desktop-up {
+    display: none;
+  }
+}
+
+.burgerLine {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-text);
+  border-radius: var(--radius-pill);
+  transition: transform var(--transition-fast) var(--ease-standard),
+    opacity var(--transition-fast) var(--ease-standard);
+}
+
+.burgerLineTop {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.burgerLineHidden {
+  opacity: 0;
+}
+
+.burgerLineBottom {
+  transform: translateY(-7px) rotate(-45deg);
+}

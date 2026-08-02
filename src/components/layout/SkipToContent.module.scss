@@ -1,0 +1,25 @@
+@use "../../styles/abstracts" as *;
+
+.link {
+  @include visually-hidden;
+  @include focus-visible;
+
+  z-index: var(--z-toast);
+  background-color: var(--color-secondary);
+  color: var(--color-text-on-primary);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+
+  &:focus {
+    position: fixed;
+    top: var(--space-3);
+    left: var(--space-3);
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}

@@ -1,0 +1,44 @@
+@use "../../styles/abstracts" as *;
+
+.wrapper {
+  height: 100%;
+}
+
+.card {
+  @include focus-visible;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.imageWrapper {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background-color: var(--color-surface-sunk);
+}
+
+.image {
+  object-fit: cover;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+
+.name {
+  font-size: rem(19px);
+}
+
+.tagline {
+  font-size: rem(14px);
+  color: var(--color-text-muted);
+  flex: 1;
+}

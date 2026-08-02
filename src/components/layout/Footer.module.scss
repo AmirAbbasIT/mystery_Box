@@ -1,0 +1,72 @@
+@use "../../styles/abstracts" as *;
+
+.footer {
+  background-color: var(--color-secondary-dark);
+  color: var(--color-text-on-primary);
+  margin-top: var(--space-9);
+}
+
+.inner {
+  @include container;
+
+  display: grid;
+  gap: var(--space-7);
+  padding-block: var(--space-8);
+  grid-template-columns: 1fr;
+
+  @include tablet-up {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+}
+
+.brandName {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  font-weight: 800;
+}
+
+.tagline {
+  margin-top: var(--space-2);
+  opacity: 0.85;
+}
+
+.familyNote {
+  margin-top: var(--space-4);
+  max-width: 40ch;
+  opacity: 0.75;
+  font-size: rem(14px);
+}
+
+.columnTitle {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: rem(13px);
+  opacity: 0.7;
+  margin-bottom: var(--space-3);
+}
+
+.linkList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.link {
+  @include focus-visible;
+
+  opacity: 0.9;
+
+  &:hover {
+    opacity: 1;
+    text-decoration: underline;
+  }
+}
+
+.bottomBar {
+  border-top: 1px solid rgb(255 255 255 / 15%);
+  padding: var(--space-4);
+  text-align: center;
+  font-size: rem(13px);
+  opacity: 0.7;
+}

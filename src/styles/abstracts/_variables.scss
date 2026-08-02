@@ -1,0 +1,78 @@
+// Raw design tokens. These maps are the single source of truth and are only
+// ever read from two places: themes/_tokens.scss (to emit CSS custom
+// properties) and _mixins.scss (for breakpoints, which must stay
+// compile-time values since @media can't consume var()).
+//
+// Everything else in the app should consume the generated CSS custom
+// properties (var(--color-primary), var(--space-4), ...), never these maps
+// directly, so a future dark/light theme is a value swap, not a rewrite.
+
+@use "sass:map";
+
+$colors: (
+  "primary": #ff6fa5,
+  "primary-dark": #e14d82,
+  "primary-light": #ffa9c7,
+  "secondary": #9b5de5,
+  "secondary-dark": #7a3dc2,
+  "secondary-light": #c6a6f2,
+  "accent": #ffd166,
+  "accent-dark": #e0a83a,
+  "surface": #fff8fb,
+  "surface-alt": #fff,
+  "surface-sunk": #fbeef4,
+  "text": #3b2545,
+  "text-muted": #6b5b75,
+  "text-on-primary": #fff,
+  "border": #f0dce6,
+  "success": #3fae6a,
+  "error": #d93a5c,
+  "white": #fff,
+  "black": #1a1220,
+);
+$spacing: (
+  "0": 0,
+  "1": 4px,
+  "2": 8px,
+  "3": 12px,
+  "4": 16px,
+  "5": 24px,
+  "6": 32px,
+  "7": 48px,
+  "8": 64px,
+  "9": 96px,
+);
+$radius: (
+  "sm": 8px,
+  "md": 16px,
+  "lg": 24px,
+  "pill": 999px,
+);
+$shadows: (
+  "sm": 0 2px 8px rgb(155 93 229 / 12%),
+  "md": 0 8px 24px rgb(155 93 229 / 16%),
+  "lg": 0 16px 40px rgb(155 93 229 / 20%),
+);
+$transitions: (
+  "fast": 150ms,
+  "base": 250ms,
+  "slow": 400ms,
+);
+$easings: (
+  "standard": cubic-bezier(0.4, 0, 0.2, 1),
+  "bounce": cubic-bezier(0.34, 1.56, 0.64, 1),
+);
+$z-index: (
+  "dropdown": 100,
+  "sticky": 200,
+  "overlay": 300,
+  "modal": 400,
+  "toast": 500,
+);
+
+// Breakpoints stay SCSS-only (compile-time), used by mixins.
+$breakpoints: (
+  "tablet": 600px,
+  "desktop": 1024px,
+  "wide": 1440px,
+);

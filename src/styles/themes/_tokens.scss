@@ -1,0 +1,41 @@
+// Emits the design tokens as CSS custom properties so they're swappable at
+// runtime — the mechanism that will let a future dark/light toggle change
+// values without touching component styles.
+@use "sass:map";
+@use "../abstracts/variables" as vars;
+
+:root {
+  @each $name, $value in vars.$colors {
+    --color-#{$name}: #{$value};
+  }
+
+  @each $name, $value in vars.$spacing {
+    --space-#{$name}: #{$value};
+  }
+
+  @each $name, $value in vars.$radius {
+    --radius-#{$name}: #{$value};
+  }
+
+  @each $name, $value in vars.$shadows {
+    --shadow-#{$name}: #{$value};
+  }
+
+  @each $name, $value in vars.$transitions {
+    --transition-#{$name}: #{$value};
+  }
+
+  @each $name, $value in vars.$easings {
+    --ease-#{$name}: #{$value};
+  }
+
+  @each $name, $value in vars.$z-index {
+    --z-#{$name}: #{$value};
+  }
+
+  // Font family stacks — --font-display/--font-body are set on <html> by
+  // next/font (see app/layout.tsx) as the self-hosted variable fonts.
+  --font-family-display: var(--font-display), "Segoe UI", sans-serif;
+  --font-family-body: var(--font-body), "Segoe UI", sans-serif;
+  --container-max: 1280px;
+}

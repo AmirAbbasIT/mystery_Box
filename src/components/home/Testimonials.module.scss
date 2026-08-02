@@ -1,0 +1,48 @@
+@use "../../styles/abstracts" as *;
+
+.section {
+  @include container;
+
+  padding-block: var(--space-8);
+}
+
+.title {
+  text-align: center;
+  margin-bottom: var(--space-7);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+
+  @include tablet-up {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card {
+  margin: 0;
+  padding: var(--space-5);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.stars {
+  color: var(--color-accent-dark);
+  font-size: rem(16px);
+  margin-bottom: var(--space-3);
+}
+
+.quote {
+  font-size: rem(15px);
+  color: var(--color-text);
+}
+
+.author {
+  margin-top: var(--space-4);
+  font-size: rem(13px);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}

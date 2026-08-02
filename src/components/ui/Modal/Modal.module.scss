@@ -1,0 +1,57 @@
+@use "../../../styles/abstracts" as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-4);
+  background-color: rgb(59 37 69 / 55%);
+  backdrop-filter: blur(2px);
+
+  @include tablet-up {
+    align-items: center;
+  }
+}
+
+.dialog {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-6);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: rem(22px);
+  margin: 0;
+}
+
+.closeButton {
+  @include flex-center;
+  @include touch-target;
+  @include focus-visible;
+
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-sunk);
+  color: var(--color-text);
+  font-size: rem(16px);
+}

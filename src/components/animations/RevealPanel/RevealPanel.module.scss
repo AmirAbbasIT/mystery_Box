@@ -1,0 +1,26 @@
+@use "../../../styles/abstracts" as *;
+
+.panel {
+  @include flex-center;
+
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.wonLabel {
+  font-size: rem(14px);
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
+
+.prizeName {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  font-weight: 800;
+  color: var(--color-text);
+}

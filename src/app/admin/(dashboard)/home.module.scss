@@ -1,0 +1,39 @@
+@use "../../../styles/abstracts" as *;
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  margin-bottom: var(--space-5);
+  color: var(--color-text);
+}
+
+.stats {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.stat {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-sm);
+}
+
+.statValue {
+  font-size: rem(28px);
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.statLabel {
+  font-size: rem(14px);
+  color: var(--color-text);
+}
+
+.link {
+  @include focus-visible;
+
+  color: var(--color-secondary-dark);
+  font-weight: 700;
+}

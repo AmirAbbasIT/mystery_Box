@@ -1,0 +1,77 @@
+@use "../../../styles/abstracts" as *;
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.thumbnails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.thumbnail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 120px;
+}
+
+.thumbnailImage {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-sunk);
+}
+
+.altInput {
+  @include form-input;
+
+  padding: var(--space-1) var(--space-2);
+  font-size: rem(12px);
+}
+
+.removeButton {
+  @include focus-visible;
+
+  background: none;
+  border: none;
+  color: var(--color-error);
+  font-size: rem(12px);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.addButton {
+  @include focus-visible;
+  @include touch-target;
+
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.error {
+  color: var(--color-error);
+  font-size: rem(14px);
+}

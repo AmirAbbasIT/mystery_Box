@@ -1,0 +1,53 @@
+@use "../../../styles/abstracts" as *;
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  overflow: hidden;
+}
+
+.trigger {
+  @include focus-visible;
+  @include touch-target;
+
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  font-weight: 700;
+  font-size: rem(16px);
+  text-align: left;
+}
+
+.icon {
+  flex-shrink: 0;
+  font-size: rem(20px);
+  color: var(--color-secondary);
+  transition: transform var(--transition-base) var(--ease-standard);
+
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+.iconOpen {
+  transform: rotate(45deg);
+}
+
+.contentWrapper {
+  overflow: hidden;
+}
+
+.content {
+  padding: 0 var(--space-5) var(--space-5);
+  color: var(--color-text-muted);
+}

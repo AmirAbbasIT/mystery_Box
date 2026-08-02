@@ -1,0 +1,34 @@
+@use "../../../../styles/abstracts" as *;
+
+.panel {
+  position: sticky;
+  top: var(--space-6);
+  width: 100%;
+  max-width: 320px;
+}
+
+.heading {
+  margin-bottom: var(--space-3);
+  font-size: rem(13px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.previewImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  @include flex-center;
+
+  position: absolute;
+  inset: 0;
+  font-size: rem(13px);
+  color: var(--color-text-muted);
+}

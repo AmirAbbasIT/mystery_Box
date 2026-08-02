@@ -1,0 +1,6 @@
+// Single entry point for the Sass API (variables, functions, mixins).
+// Component styles should `@use "<relative-path>/styles/abstracts" as *;`
+// to get mixins/functions — this file emits no CSS of its own.
+@forward "variables";
+@forward "functions";
+@forward "mixins";

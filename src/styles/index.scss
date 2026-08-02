@@ -1,0 +1,5 @@
+// Global stylesheet entry — imported once from app/globals.scss.
+// Order matters: tokens (CSS vars) must exist before base rules use them.
+@forward "themes/tokens";
+@forward "base/reset";
+@forward "base/typography";

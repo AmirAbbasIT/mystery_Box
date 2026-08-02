@@ -1,0 +1,30 @@
+@use "../../styles/abstracts" as *;
+
+.section {
+  background-color: var(--color-surface-sunk);
+}
+
+.grid {
+  @include container;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  padding-block: var(--space-7);
+  text-align: center;
+
+  @include tablet-up {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.itemTitle {
+  font-size: rem(15px);
+  color: var(--color-secondary-dark);
+}
+
+.itemDescription {
+  margin-top: var(--space-1);
+  font-size: rem(13px);
+  color: var(--color-text-muted);
+}

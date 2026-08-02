@@ -1,0 +1,83 @@
+@use "../../../styles/abstracts" as *;
+
+.button {
+  @include flex-center;
+  @include touch-target;
+  @include focus-visible;
+
+  display: inline-flex;
+  gap: var(--space-2);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family-body);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast) var(--ease-standard),
+    box-shadow var(--transition-fast) var(--ease-standard),
+    background-color var(--transition-fast) var(--ease-standard);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  @include reduced-motion {
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// ---- Variants ----
+.primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  box-shadow: var(--shadow-sm);
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-text-on-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.outline {
+  background-color: transparent;
+  color: var(--color-secondary-dark);
+  border: 2px solid var(--color-secondary);
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--color-text);
+}
+
+// ---- Sizes ----
+.sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: rem(14px);
+}
+
+.md {
+  padding: var(--space-3) var(--space-5);
+  font-size: rem(16px);
+}
+
+.lg {
+  padding: var(--space-4) var(--space-6);
+  font-size: rem(18px);
+}

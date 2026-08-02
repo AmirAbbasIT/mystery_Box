@@ -1,0 +1,43 @@
+@use "../../../styles/abstracts" as *;
+
+.wrapper {
+  @include flex-center;
+
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 220px;
+}
+
+.egg {
+  @include focus-visible;
+
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  will-change: transform;
+  transition: transform var(--transition-fast) var(--ease-standard);
+
+  &:hover:not(:disabled) {
+    transform: scale(1.04);
+  }
+
+  &:disabled {
+    cursor: wait;
+  }
+
+  @include reduced-motion {
+    &:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+.eggImage {
+  object-fit: contain;
+}
+
+.srOnly {
+  @include visually-hidden;
+}

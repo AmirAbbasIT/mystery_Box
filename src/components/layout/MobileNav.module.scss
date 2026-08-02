@@ -1,0 +1,46 @@
+@use "../../styles/abstracts" as *;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background-color: rgb(59 37 69 / 45%);
+
+  @include tablet-up {
+    display: none;
+  }
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 85vw);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-8) var(--space-5) var(--space-5);
+  overflow-y: auto;
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.navLink {
+  @include focus-visible;
+  @include touch-target;
+
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-2);
+  font-weight: 700;
+  font-size: rem(18px);
+  border-radius: var(--radius-sm);
+
+  &:hover {
+    background-color: var(--color-surface-sunk);
+  }
+}

@@ -1,0 +1,190 @@
+// Catalogue schema — Phase 2a. Matches claude/09-database-schema.md and the tables already
+// created in Supabase Postgres. @map/@@map keep Prisma's camelCase field names mapped onto the
+// existing snake_case columns/tables rather than renaming anything in the database.
+// Orders/customers/custom_requests models are deliberately not included yet — see
+// claude/10-admin-panel.md's phased scope (2a catalogue, 2b custom-requests, 2c orders).
+
+// Prisma 7: connection URLs live in prisma.config.ts (CLI/migrations) and are passed explicitly
+// to the driver adapter at runtime (src/lib/db/client.ts, shared by admin services and the
+// storefront's src/lib/catalogue.ts) — schema.prisma no longer takes a `url`/`directUrl`.
+// See https://pris.ly/d/config-datasource.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String   @unique
+  name      String
+  tagline   String
+  heroImage String   @map("hero_image")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Theme {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String   @unique
+  name        String
+  colorSwatch String   @map("color_swatch")
+  description String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  productThemes         ProductTheme[]
+  birthdayPackageThemes BirthdayPackageTheme[]
+
+  @@map("themes")
+}
+
+model Product {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug              String   @unique
+  name              String
+  description       String
+  pricePence        Int      @map("price_pence")
+  categoryId        String   @map("category_id") @db.Uuid
+  stock             Int      @default(0)
+  active            Boolean  @default(true)
+  ageSuitability    String[] @map("age_suitability")
+  whatCouldBeInside String[] @map("what_could_be_inside")
+  featured          Boolean  @default(false)
+  seasonal          Boolean  @default(false)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  category            Category                    @relation(fields: [categoryId], references: [id])
+  images               ProductImage[]
+  themes                ProductTheme[]
+  seasonalCollections SeasonalCollectionProduct[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String @map("product_id") @db.Uuid
+  src       String
+  alt       String
+  sortOrder Int    @default(0) @map("sort_order")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model ProductTheme {
+  productId String @map("product_id") @db.Uuid
+  themeId   String @map("theme_id") @db.Uuid
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  theme   Theme   @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([productId, themeId])
+  @@map("product_themes")
+}
+
+model PrizePool {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug       String   @unique
+  name       String
+  kind       String
+  quantity   Int?
+  pricePence Int      @map("price_pence")
+  image      String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  prizeItems PrizeItem[]
+
+  @@map("prize_pools")
+}
+
+model PrizeItem {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prizePoolId String  @map("prize_pool_id") @db.Uuid
+  label       String
+  rarity      String
+  weight      Decimal @db.Decimal
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  prizePool PrizePool @relation(fields: [prizePoolId], references: [id], onDelete: Cascade)
+
+  @@index([prizePoolId])
+  @@map("prize_items")
+}
+
+model BirthdayPackage {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String   @unique
+  audience       String
+  name           String
+  description    String
+  priceFromPence Int      @map("price_from_pence")
+  ageRange       String?  @map("age_range")
+  image          String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  includes BirthdayPackageInclude[]
+  themes   BirthdayPackageTheme[]
+
+  @@map("birthday_packages")
+}
+
+model BirthdayPackageInclude {
+  id                String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  birthdayPackageId String @map("birthday_package_id") @db.Uuid
+  label             String
+  sortOrder         Int    @default(0) @map("sort_order")
+
+  birthdayPackage BirthdayPackage @relation(fields: [birthdayPackageId], references: [id], onDelete: Cascade)
+
+  @@index([birthdayPackageId])
+  @@map("birthday_package_includes")
+}
+
+model BirthdayPackageTheme {
+  birthdayPackageId String @map("birthday_package_id") @db.Uuid
+  themeId           String @map("theme_id") @db.Uuid
+
+  birthdayPackage BirthdayPackage @relation(fields: [birthdayPackageId], references: [id], onDelete: Cascade)
+  theme           Theme           @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([birthdayPackageId, themeId])
+  @@map("birthday_package_themes")
+}
+
+model SeasonalCollection {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String   @unique
+  name        String
+  description String
+  startsAt    DateTime @map("starts_at") @db.Date
+  endsAt      DateTime @map("ends_at") @db.Date
+  heroImage   String   @map("hero_image")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  products SeasonalCollectionProduct[]
+
+  @@map("seasonal_collections")
+}
+
+model SeasonalCollectionProduct {
+  seasonalCollectionId String @map("seasonal_collection_id") @db.Uuid
+  productId             String @map("product_id") @db.Uuid
+
+  seasonalCollection SeasonalCollection @relation(fields: [seasonalCollectionId], references: [id], onDelete: Cascade)
+  product            Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([seasonalCollectionId, productId])
+  @@map("seasonal_collection_products")
+}

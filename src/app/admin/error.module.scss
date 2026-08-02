@@ -1,0 +1,88 @@
+@use "../../styles/abstracts" as *;
+
+.page {
+  @include flex-center;
+
+  min-height: 100vh;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-md);
+}
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(22px);
+  color: var(--color-text);
+}
+
+.description {
+  font-size: rem(14px);
+  color: var(--color-text-muted);
+}
+
+.details {
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-sunk);
+}
+
+.detailsLabel {
+  font-size: rem(12px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.detailsMessage {
+  font-size: rem(13px);
+  font-family: monospace;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.detailsDigest {
+  margin-top: var(--space-2);
+  font-size: rem(12px);
+  font-family: monospace;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.retryButton {
+  @include focus-visible;
+  @include touch-target;
+
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboardLink {
+  @include focus-visible;
+
+  color: var(--color-secondary-dark);
+  font-weight: 700;
+}

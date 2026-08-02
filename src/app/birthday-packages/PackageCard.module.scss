@@ -1,0 +1,57 @@
+@use "../../styles/abstracts" as *;
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.imageWrapper {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background-color: var(--color-surface-sunk);
+}
+
+.image {
+  object-fit: cover;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  flex: 1;
+}
+
+.description {
+  font-size: rem(14px);
+  color: var(--color-text-muted);
+}
+
+.includes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  list-style: disc;
+  padding-left: var(--space-5);
+  font-size: rem(13px);
+  color: var(--color-text);
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+}
+
+.ageRange {
+  font-size: rem(13px);
+  font-weight: 700;
+  color: var(--color-secondary-dark);
+}
