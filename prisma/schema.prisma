@@ -188,3 +188,14 @@ model SeasonalCollectionProduct {
   @@id([seasonalCollectionId, productId])
   @@map("seasonal_collection_products")
 }
+
+// Singleton — exactly one row ever exists (see src/admin/services/site-settings.service.ts's
+// get-or-create). Not a list-of-records entity, so it doesn't get the usual list/new/[id] admin
+// CRUD pattern — see claude/10-admin-panel.md.
+model SiteSettings {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  activeColorPalette String   @default("blush-rose") @map("active_color_palette")
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("site_settings")
+}

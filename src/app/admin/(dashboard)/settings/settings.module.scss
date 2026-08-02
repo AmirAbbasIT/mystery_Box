@@ -1,0 +1,166 @@
+@use "../../../../styles/abstracts" as *;
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  color: var(--color-text);
+  margin-bottom: var(--space-5);
+}
+
+.layout {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1 1 480px;
+  max-width: 640px;
+}
+
+.sectionTitle {
+  font-family: var(--font-family-display);
+  font-size: rem(18px);
+  color: var(--color-text);
+}
+
+.sectionDescription {
+  font-size: rem(14px);
+  color: var(--color-text-muted);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.swatchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.swatchCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  background-color: var(--color-surface-alt);
+  cursor: pointer;
+  transition: border-color var(--transition-fast) var(--ease-standard);
+}
+
+.swatchCardActive {
+  border-color: var(--color-secondary);
+}
+
+.swatchRadio {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+}
+
+.swatchDots {
+  display: flex;
+  gap: var(--space-2);
+
+  span {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
+  }
+}
+
+.swatchName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.swatchDescription {
+  font-size: rem(13px);
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-error);
+  font-size: rem(14px);
+}
+
+.submit {
+  @include focus-visible;
+  @include touch-target;
+
+  align-self: flex-start;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.previewPanel {
+  position: sticky;
+  top: var(--space-6);
+  width: 100%;
+  max-width: 320px;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.previewLabel {
+  margin-bottom: var(--space-3);
+  font-size: rem(13px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-alt);
+  box-shadow: var(--shadow-sm);
+}
+
+.previewBadgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.previewTitle {
+  font-size: rem(17px);
+  color: var(--color-text);
+}
+
+.previewDescription {
+  font-size: rem(14px);
+  color: var(--color-text-muted);
+}
+
+.previewFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+}

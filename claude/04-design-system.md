@@ -14,8 +14,9 @@ src/styles/
 │   ├── _reset.scss         # modern reset + global prefers-reduced-motion kill-switch
 │   └── _typography.scss    # heading scale (fluid clamp()), body defaults
 ├── themes/
-│   └── _tokens.scss        # emits :root CSS custom properties from the variables maps
-└── index.scss               # @forward tokens + reset + typography — the one global entry point
+│   ├── _tokens.scss        # emits :root CSS custom properties from the variables maps
+│   └── _palettes.scss       # selectable colour palette overrides — see below, live now
+└── index.scss               # @forward tokens + palettes + reset + typography — the entry point
 ```
 
 ## The token → CSS custom property split (important)
@@ -25,11 +26,41 @@ src/styles/
 `abstracts/_mixins.scss` (breakpoints only, since `@media` can't consume `var()`).
 
 **Everywhere else — every component's `.module.scss` — should reference the CSS custom
-properties (`var(--color-primary)`, `var(--space-4)`), never the Sass maps directly.** This is
-deliberate: the user asked for no dark/light mode in Phase 1, but wanted it to be easy to add
-later. Because every color/spacing/radius value is already a runtime-swappable CSS custom
-property, adding a theme toggle later means swapping the values inside a
-`:root[data-theme="dark"] { --color-surface: ...; }` block — not touching a single component.
+properties (`var(--color-primary)`, `var(--space-4)`), never the Sass maps directly.** This was
+deliberate from Phase 1: the user asked for no dark/light mode then, but wanted it to be easy to
+add later, because every color/spacing/radius value being a runtime-swappable CSS custom property
+means a theme toggle is a value swap, not a rewrite. **This promise got cashed in** — see
+"Selectable colour palettes" below, admin-controlled at `/admin/settings`. The same mechanism
+(`[data-color-theme="..."]` blocks) is exactly what a future dark/light toggle would also use.
+
+## Selectable colour palettes (live)
+
+`themes/_palettes.scss` defines four named palettes — Blush Rose (pink/purple, the original
+default), Ocean Blue, Meadow Green, Sunset Orange (see `src/lib/color-palettes.ts` for the
+canonical list) — as plain attribute-selector blocks:
+`[data-color-theme="ocean-blue"] { --color-primary: ...; }`. Deliberately distinct hue families,
+not shades of the same one — an earlier version had four pink/purple variations that were hard to
+tell apart in the admin picker. Also deliberately **not** `:root`-scoped, unlike a typical
+dark/light toggle would be — that lets the identical CSS rule apply two ways with zero
+duplication:
+
+- **Site-wide**: `src/app/layout.tsx` sets `data-color-theme` on `<html>`, driven by
+  `src/lib/site-settings.ts`'s read of the admin-selected value (`SiteSettings.activeColorPalette`,
+  a singleton DB row — see [[09-database-schema]]).
+- **Scoped preview**: `/admin/settings`'s live preview wraps a plain `<div data-color-theme="...">`
+  around real `Button`/`Badge`/`PriceTag` components — same CSS rule, same hex values, zero
+  duplication between the preview and the real site, and zero code changes needed in those
+  components (they already only ever read `var(--color-primary)` etc.).
+
+Every palette redefines the same brand-identity tokens (`primary`/`-dark`/`-light`,
+`secondary`/`-dark`/`-light`, `surface`/`-alt`/`-sunk`, `text`/`-muted`/`-on-primary`, `border`).
+`accent` (the gold "win moment" color) and the semantic `success`/`error`/`white`/`black` tokens
+stay constant across every palette on purpose — varying the win-moment color per palette would
+weaken that signal, and semantic colors aren't a brand-aesthetic concern (it's also why there's no
+yellow/gold palette option — that would visually compete with accent). Every palette uses white
+`--color-text-on-primary`, since all four keep primary/secondary at medium-to-vivid saturation
+specifically to keep that contrast safe (a pastel-toned palette would need a dark
+`--color-text-on-primary` instead, the way an earlier discarded "Cotton Candy" variant did).
 
 ## Palette
 

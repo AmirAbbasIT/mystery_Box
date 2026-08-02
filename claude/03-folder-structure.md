@@ -49,8 +49,12 @@ mystery_box/
 │   ├── lib/
 │   │   ├── constants.ts, utils.ts (formatPrice, cx, pickWeighted)
 │   │   ├── db/client.ts        # getPrismaClient() — shared by admin services AND catalogue.ts
-│   │   └── catalogue.ts        # storefront reads: getProducts, getProductsByCategory,
-│   │                            # getCategories, getCategoryBySlug, getThemes — see [[02-architecture]]
+│   │   ├── catalogue.ts        # storefront reads: getProducts, getProductsByCategory,
+│   │   │                        # getCategories, getCategoryBySlug, getThemes, getWheelPrizePool,
+│   │   │                        # getEggPrizePools — see [[02-architecture]]
+│   │   ├── color-palettes.ts    # the 4 selectable palette presets — see [[04-design-system]]
+│   │   └── site-settings.ts     # getActiveColorPaletteId() — falls back to default on error
+│   │                              rather than throwing, unlike catalogue.ts (see [[10-admin-panel]])
 │   └── hooks/                  # usePrefersReducedMotion, useMediaQuery
 ├── eslint.config.mjs, .prettierrc.json, .stylelintrc.json, next.config.ts, tsconfig.json
 ```
@@ -115,16 +119,22 @@ src/
 │       ├── themes/                    # same shape, plus a live colour-swatch preview
 │       │   ├── page.tsx, new/page.tsx, [id]/page.tsx, ThemeForm.tsx, actions.ts
 │       │   └── themes.module.scss
-│       └── prize-pools/               # same shape, plus a nested prize-item editor + live
-│           │                            # spinning preview (kind: "wheel" only, reuses WheelSpinLoader)
-│           ├── page.tsx, new/page.tsx, [id]/page.tsx, PrizePoolForm.tsx, actions.ts
-│           └── prize-pools.module.scss
+│       ├── prize-pools/               # same shape, plus a nested prize-item editor + live
+│       │   │                            # spinning preview (both kinds, reuses WheelSpinLoader)
+│       │   ├── page.tsx, new/page.tsx, [id]/page.tsx, PrizePoolForm.tsx, actions.ts
+│       │   └── prize-pools.module.scss
+│       └── settings/                  # singleton, not list/new/[id] — see [[10-admin-panel]]
+│           ├── page.tsx                  # fetches the active palette id
+│           ├── SettingsForm.tsx           # swatch picker + live preview (data-color-theme div)
+│           ├── actions.ts                  # revalidatePath('/', 'layout') — affects the whole site
+│           └── settings.module.scss
 ├── admin/                           # everything admin-write-specific, not routes — see above
 │   ├── services/
 │   │   ├── products.service.ts        # list/get/create/update/delete — see [[10-admin-panel]]
 │   │   ├── categories.service.ts
 │   │   ├── themes.service.ts
-│   │   └── prize-pools.service.ts      # covers both kind: "wheel" and "egg" — one shared table
+│   │   ├── prize-pools.service.ts       # covers both kind: "wheel" and "egg" — one shared table
+│   │   └── site-settings.service.ts      # singleton get-or-create — see [[09-database-schema]]
 │   ├── storage/
 │   │   ├── client.ts                   # getStorageClient() — @supabase/supabase-js, Storage only
 │   │   └── upload.ts                    # uploadImage(file, folder) → public URL

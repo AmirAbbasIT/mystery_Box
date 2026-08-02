@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { label: "Categories", href: "/admin/categories" },
   { label: "Themes", href: "/admin/themes" },
   { label: "Prize Pools", href: "/admin/prize-pools" },
+  { label: "Settings", href: "/admin/settings" },
 ];
 
 export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {

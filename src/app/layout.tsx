@@ -3,7 +3,10 @@ import { Baloo_2, Nunito_Sans } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SkipToContent } from "@/components/layout/SkipToContent";
+import { getActiveColorPaletteId } from "@/lib/site-settings";
 import "./globals.scss";
+
+export const revalidate = 60;
 
 const displayFont = Baloo_2({
   variable: "--font-display",
@@ -26,13 +29,19 @@ export const metadata: Metadata = {
     "UK mystery boxes, pink eggs and wheel spin prizes for jewellery, makeup & beauty and stationery lovers. Plus birthday packages and custom gift requests.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const colorPaletteId = await getActiveColorPaletteId();
+
   return (
-    <html lang="en-GB" className={`${displayFont.variable} ${bodyFont.variable}`}>
+    <html
+      lang="en-GB"
+      data-color-theme={colorPaletteId}
+      className={`${displayFont.variable} ${bodyFont.variable}`}
+    >
       <body>
         <SkipToContent />
         <Header />

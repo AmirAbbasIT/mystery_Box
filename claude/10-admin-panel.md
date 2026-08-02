@@ -179,7 +179,23 @@ step further than pixel-true — it's the **actual live component**: `PrizePoolF
 `WheelSpinLoader` (dynamic-imported GSAP wheel, same as `/wheel-spin`) fed directly by the
 in-progress prize-item rows, so the admin can genuinely spin the wheel they're still editing,
 odds and all, before saving. Only shown for `kind: "wheel"` — there's no equivalent live-preview
-component for `kind: "egg"` yet since Mystery Eggs isn't wired to the storefront.
+component for `kind: "egg"` (no `EggRevealLoader`-based preview built yet), even though Mystery
+Eggs is now wired to the storefront the same as Wheel Spin.
+
+## Site Settings — a singleton, not a catalogue entity
+
+`/admin/settings` breaks the list/new/[id] pattern every other admin screen follows, on purpose:
+`SiteSettings` is a single DB row (see [[09-database-schema]]), not a list of records, so there's
+nothing to list and nothing to create — just one form that reads and updates that one row.
+Currently manages exactly one setting: the site's active **colour palette** (4 curated presets —
+Blush Rose, Ocean Blue, Meadow Green, Sunset Orange — deliberately distinct hue families, not a
+full custom colour editor; see
+[[04-design-system]] for the CSS mechanism). Saving calls `revalidatePath('/', 'layout')`, since
+the palette affects the storefront's root layout and therefore every single page — the "revalidate
+all data" pattern from Next's own docs, not something scoped to one route the way every other
+admin action here is. The live preview is the same `data-color-theme` attribute trick used
+site-wide, just scoped to a `<div>` instead of `<html>` — real `Button`/`Badge`/`PriceTag`
+components, zero duplicated colour values between the preview and the real site.
 
 ## Phase 2b: custom-requests inbox
 

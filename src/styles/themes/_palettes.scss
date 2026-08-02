@@ -1,0 +1,79 @@
+// Selectable colour palette overrides — the mechanism claude/04-design-system.md already
+// anticipated ("adding a theme toggle later means swapping the values inside a
+// `:root[data-theme="dark"]` block — not touching a single component"). Deliberately plain
+// attribute selectors, not `:root`-scoped — that lets the exact same rule apply site-wide (on
+// <html data-color-theme="...">, set in app/layout.tsx) or scoped to just a nested element (the
+// admin settings live preview wraps a <div data-color-theme="..."> around real Button/Badge/
+// PriceTag components, so the preview never needs to duplicate these hex values in TS/JS).
+// Every palette redefines the same brand-identity tokens; accent/success/error/white/black stay
+// constant across all palettes on purpose — accent is the "win moment" gold (see
+// 04-design-system.md), and varying it per palette would weaken that signal. See
+// src/lib/color-palettes.ts for the id list these attribute values must match.
+// Deliberately distinct hue families (pink/blue/green/orange), not near-identical variations —
+// an earlier version of this file had 4 pink/purple palettes that were hard to tell apart.
+
+// Blush Rose is the default — written explicitly here too (even though it matches the base
+// :root values in tokens.scss) so all four palettes are symmetric and equally discoverable.
+[data-color-theme="blush-rose"] {
+  --color-primary: #ff6fa5;
+  --color-primary-dark: #e14d82;
+  --color-primary-light: #ffa9c7;
+  --color-secondary: #9b5de5;
+  --color-secondary-dark: #7a3dc2;
+  --color-secondary-light: #c6a6f2;
+  --color-surface: #fff8fb;
+  --color-surface-alt: #fff;
+  --color-surface-sunk: #fbeef4;
+  --color-text: #3b2545;
+  --color-text-muted: #6b5b75;
+  --color-text-on-primary: #fff;
+  --color-border: #f0dce6;
+}
+
+[data-color-theme="ocean-blue"] {
+  --color-primary: #3d8bfd;
+  --color-primary-dark: #1f6fe0;
+  --color-primary-light: #8fc0ff;
+  --color-secondary: #22b8cf;
+  --color-secondary-dark: #1897ab;
+  --color-secondary-light: #7fe0ec;
+  --color-surface: #f5faff;
+  --color-surface-alt: #fff;
+  --color-surface-sunk: #e6f2ff;
+  --color-text: #1c3350;
+  --color-text-muted: #52708c;
+  --color-text-on-primary: #fff;
+  --color-border: #d6e8fb;
+}
+
+[data-color-theme="meadow-green"] {
+  --color-primary: #38b26a;
+  --color-primary-dark: #278f52;
+  --color-primary-light: #8fdcb0;
+  --color-secondary: #22b8a0;
+  --color-secondary-dark: #189683;
+  --color-secondary-light: #86e0d2;
+  --color-surface: #f5fbf7;
+  --color-surface-alt: #fff;
+  --color-surface-sunk: #e3f6ea;
+  --color-text: #1d3b2c;
+  --color-text-muted: #4f7862;
+  --color-text-on-primary: #fff;
+  --color-border: #d3ecdd;
+}
+
+[data-color-theme="sunset-orange"] {
+  --color-primary: #ff8a3d;
+  --color-primary-dark: #e56a1a;
+  --color-primary-light: #ffbb8a;
+  --color-secondary: #ff5e7e;
+  --color-secondary-dark: #e63e60;
+  --color-secondary-light: #ffa3b5;
+  --color-surface: #fff8f3;
+  --color-surface-alt: #fff;
+  --color-surface-sunk: #ffe9db;
+  --color-text: #4a2515;
+  --color-text-muted: #7d5a48;
+  --color-text-on-primary: #fff;
+  --color-border: #ffdcc2;
+}

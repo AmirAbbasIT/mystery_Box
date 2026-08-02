@@ -6,15 +6,18 @@ Postgres (resolved below); the *client library* talking to it is **Prisma** (`@p
 `@prisma/adapter-pg`), not the `@supabase/supabase-js` REST client this doc originally assumed —
 see [[10-admin-panel]]'s Decisions locked in for why that changed. `prisma/schema.prisma` is now
 the source of truth for the schema (matching the tables below exactly); `prisma/migrations/0_init/`
-is the baseline migration recording what's already live. Two consumers, one shared client
+is the baseline migration recording what's already live (plus incremental migrations since —
+`prisma migrate dev` is the normal workflow now that `DIRECT_URL` is configured, not the manual
+`migrate resolve` dance the baseline needed). Two consumers, one shared client
 (`src/lib/db/client.ts`, deliberately moved out of `src/admin/` once the storefront needed it too):
-`src/admin/services/{products,categories,themes}.service.ts` (admin writes, all rows including
-inactive) and `src/lib/catalogue.ts` (storefront reads, active-only, shaped to match the existing
-`Product`/`Category`/`Theme` types exactly — see [[02-architecture]]'s Data flow section).
-`orders`/`customers`/`custom_requests` tables (see below) aren't written yet — Phase 2b/2c per
-[[10-admin-panel]]. `PrizePool`/`BirthdayPackage`/`SeasonalCollection` tables exist in this schema
-but have no admin CRUD or rows yet — their storefront pages (Mystery Eggs, Wheel Spin, Birthday
-Packages, Seasonal) still read `src/data/` untouched.
+`src/admin/services/*.ts` (admin writes, all rows including inactive) and `src/lib/catalogue.ts`
+(storefront reads, active-only, shaped to match the existing `Product`/`Category`/`Theme`/
+`PrizePool` types exactly — see [[02-architecture]]'s Data flow section). `orders`/`customers`/
+`custom_requests` tables (see below) aren't written yet — Phase 2b/2c per [[10-admin-panel]].
+`BirthdayPackage`/`SeasonalCollection` tables exist in this schema but have no admin CRUD yet —
+those storefront pages still read `src/data/` untouched. `PrizePool` (both `kind` values) is fully
+live. `SiteSettings` (see below) is a small addition for the colour-palette feature, not part of
+the original catalogue plan.
 
 ## Engine: resolved to Supabase
 
@@ -102,6 +105,20 @@ custom_requests (id, recipient_type text check in ('kids','adult'), age_range, o
 
 `status`/`staff_notes` are the only fields not already in `CustomRequestInput` — added so
 [[10-admin-panel]]'s inbox has something to triage against.
+
+### Site Settings (live — singleton, not a catalogue entity)
+
+```
+site_settings (id, active_color_palette text default 'blush-rose', updated_at)
+```
+
+Exactly one row ever exists — `site-settings.service.ts`'s `getOrCreateSettings()` is the only
+code allowed to touch this table, so nothing else has to reason about "what if the row doesn't
+exist yet." `active_color_palette` is a free-text slug validated in application code
+(`isValidColorPaletteId()` in `src/lib/color-palettes.ts`) against the 4 curated presets, not a DB
+enum — adding a 5th preset later is a code change (new palette + new SCSS block), not a migration.
+This table doesn't fit the list/new/[id] admin CRUD pattern the rest of this doc uses — see
+[[10-admin-panel]] for why `/admin/settings` is a single form instead.
 
 ## Migration path from mock data
 
