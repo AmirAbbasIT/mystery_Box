@@ -109,9 +109,9 @@ this doc's original sketch didn't anticipate:
 - Everything non-route (auth, DB client, services) lives in `src/admin/`, not scattered across
   `src/lib/` and `src/services/` — see the Decisions locked in section above.
 
-Themes/PrizePools/BirthdayPackages/SeasonalCollections each get the same
-`page.tsx` + `[id]/page.tsx` + `new/page.tsx` + `actions.ts` + a shared `*Form.tsx` shape as
-`products/`, replicating what's already there rather than a new pattern.
+BirthdayPackages/SeasonalCollections get the same `page.tsx` + `[id]/page.tsx` + `new/page.tsx` +
+`actions.ts` + a shared `*Form.tsx` shape as `products/`, replicating what's already there rather
+than a new pattern — Prize Pools already does (see below).
 
 Also: Next.js 16 renamed `middleware.ts` to `proxy.ts` (middleware is deprecated) — the actual gate
 lives at `src/proxy.ts`, not the `middleware.ts` this doc originally assumed. Check
@@ -155,7 +155,7 @@ Phase 1 pages don't hit the database yet, so this class of error can't happen th
 | Products ✅ live | table: name, category, price, stock, active toggle | name, slug, description, price, category, themes (multi-select), images (real upload via `ImagePicker`, multiple + alt text), age suitability, stock, "what could be inside" lines, featured/seasonal flags — **plus a live preview panel** (see below) | `src/data/products.ts` |
 | Categories ✅ live | table: name, slug, product count | name, slug, tagline, hero image (real upload via `ImagePicker`, single) | `src/data/categories.ts` |
 | Themes ✅ live | table: swatch dot, name, slug, product count | name, slug, colour swatch (colour picker + hex input), description — **plus a live preview panel** (see below) | `src/data/themes.ts` |
-| Prize Pools | table: name, kind, item count | name, slug, kind, quantity (egg only), price, image, **nested prize-item editor** (label, rarity, weight, reorder) | `src/data/prize-pools.ts` |
+| Prize Pools ✅ live (wheel only) | table: name, kind, price, prize count | name, slug, kind, quantity (egg only), price, image (real upload via `ImagePicker`), **nested prize-item editor** (label, rarity, weight, reorder via ↑/↓, live odds %) — **plus a live spinning preview** for `kind: "wheel"` (see below) | `src/data/prize-pools.ts` |
 | Birthday Packages | table: name, audience, price from | name, slug, audience, description, price from, includes (list), age range, themes | `src/data/birthday-packages.ts` |
 | Seasonal Collections | table: name, date range | name, slug, description, start/end date, hero image, product picker | `src/data/seasonal.ts` |
 
@@ -167,14 +167,19 @@ friendly inline error instead of a hard crash. Deleting a Theme has no such guar
 `ProductTheme.theme` *is* `onDelete: Cascade` — that's an intentional difference (removing a theme
 just untags it from products, not destructive to the product itself).
 
-**Live preview panels** (Products, Themes): a client-side, controlled-input mirror of the form's
-own fields rendered next to it, so the admin sees the result before saving. Products' preview
-literally imports `ProductCard`'s own `.module.scss` (not a re-implementation) so it's pixel-true
-to the real storefront card, swapping only `next/image` for a plain `<img>` and dropping the
-entrance animation, since both fight live typing. Themes' preview is new UI, not a mirror of
+**Live preview panels** (Products, Themes, Prize Pools): a client-side, controlled-input mirror of
+the form's own fields rendered next to it, so the admin sees the result before saving. Products'
+preview literally imports `ProductCard`'s own `.module.scss` (not a re-implementation) so it's
+pixel-true to the real storefront card, swapping only `next/image` for a plain `<img>` and dropping
+the entrance animation, since both fight live typing. Themes' preview is new UI, not a mirror of
 anything — a repo-wide grep confirmed `Theme.colorSwatch` isn't rendered anywhere in the storefront
 today (`ProductFilterGrid`'s chips are active/inactive-styled, not swatch-colored), so this is the
-first actual visual use of that field, not a copy of an existing one.
+first actual visual use of that field, not a copy of an existing one. Prize Pools' preview goes a
+step further than pixel-true — it's the **actual live component**: `PrizePoolForm` renders the real
+`WheelSpinLoader` (dynamic-imported GSAP wheel, same as `/wheel-spin`) fed directly by the
+in-progress prize-item rows, so the admin can genuinely spin the wheel they're still editing,
+odds and all, before saving. Only shown for `kind: "wheel"` — there's no equivalent live-preview
+component for `kind: "egg"` yet since Mystery Eggs isn't wired to the storefront.
 
 ## Phase 2b: custom-requests inbox
 

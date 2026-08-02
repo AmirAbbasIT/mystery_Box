@@ -2,20 +2,19 @@ import { getPrismaClient } from "@/lib/db/client";
 import type { Product, ProductImage, AgeSuitability } from "@/types/product";
 import type { Category, CategorySlug } from "@/types/category";
 import type { Theme } from "@/types/theme";
+import type { PrizePool } from "@/types/prize-pool";
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
- * Storefront-facing read layer — Products/Categories/Themes are live in Postgres now (see
- * claude/09-database-schema.md), so these replace the equivalent src/data/*.ts mock arrays for
- * the pages that have been wired up. Deliberately separate from src/admin/services/*.ts: those
- * return admin-shaped records (pricePence, categoryId, all products including inactive ones) for
- * CRUD screens; these return the exact same Product/Category/Theme shapes the storefront
- * components already expect (price in pounds, category as a flat slug, active-only), so
- * ProductCard/ProductGrid/etc. needed zero shape changes — only their data source changed.
+ * Storefront-facing read layer — Products/Categories/Themes/Wheel-Spin-PrizePool are live in
+ * Postgres now (see claude/09-database-schema.md), so these replace the equivalent src/data/*.ts
+ * mock arrays for the pages that have been wired up. Deliberately separate from
+ * src/admin/services/*.ts: those return admin-shaped records for CRUD screens; these return the
+ * exact same Product/Category/Theme/PrizePool shapes the storefront components already expect, so
+ * components needed zero shape changes — only their data source changed.
  *
- * PrizePool/BirthdayPackage/SeasonalCollection are NOT here yet — those tables have no admin CRUD
- * or seed data, so the pages backed by them (Mystery Eggs, Wheel Spin, Birthday Packages,
- * Seasonal) still read src/data/*.ts. Wiring them here would just show empty results.
+ * BirthdayPackage/SeasonalCollection, and Mystery Eggs (PrizePool kind: "egg") are NOT here yet —
+ * no admin CRUD or seed data for those specifically, so their pages still read src/data/*.ts.
  */
 
 const PRODUCT_INCLUDE = {
@@ -98,4 +97,34 @@ export async function getThemes(): Promise<Theme[]> {
     colorSwatch: row.colorSwatch,
     description: row.description,
   }));
+}
+
+/**
+ * The single active Wheel Spin config — "first created wheel-kind pool", since there's no
+ * `active`/featured flag on PrizePool and the storefront only ever shows one wheel at a time. If
+ * multiple wheels/rotation ever becomes a real need, that's a schema addition, not a query change.
+ */
+export async function getWheelPrizePool(): Promise<PrizePool | null> {
+  const row = await getPrismaClient().prizePool.findFirst({
+    where: { kind: "wheel" },
+    include: { prizeItems: { orderBy: { sortOrder: "asc" } } },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    kind: "wheel",
+    quantity: row.quantity ?? undefined,
+    price: row.pricePence / 100,
+    image: row.image,
+    prizes: row.prizeItems.map((item) => ({
+      id: item.id,
+      label: item.label,
+      rarity: item.rarity as PrizePool["prizes"][number]["rarity"],
+      weight: item.weight.toNumber(),
+    })),
+  };
 }

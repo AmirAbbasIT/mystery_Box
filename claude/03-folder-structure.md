@@ -112,14 +112,19 @@ src/
 │       ├── categories/                # same shape as products/ (no preview panel)
 │       │   ├── page.tsx, new/page.tsx, [id]/page.tsx, CategoryForm.tsx, actions.ts
 │       │   └── categories.module.scss
-│       └── themes/                    # same shape, plus a live colour-swatch preview
-│           ├── page.tsx, new/page.tsx, [id]/page.tsx, ThemeForm.tsx, actions.ts
-│           └── themes.module.scss
+│       ├── themes/                    # same shape, plus a live colour-swatch preview
+│       │   ├── page.tsx, new/page.tsx, [id]/page.tsx, ThemeForm.tsx, actions.ts
+│       │   └── themes.module.scss
+│       └── prize-pools/               # same shape, plus a nested prize-item editor + live
+│           │                            # spinning preview (kind: "wheel" only, reuses WheelSpinLoader)
+│           ├── page.tsx, new/page.tsx, [id]/page.tsx, PrizePoolForm.tsx, actions.ts
+│           └── prize-pools.module.scss
 ├── admin/                           # everything admin-write-specific, not routes — see above
 │   ├── services/
 │   │   ├── products.service.ts        # list/get/create/update/delete — see [[10-admin-panel]]
 │   │   ├── categories.service.ts
-│   │   └── themes.service.ts
+│   │   ├── themes.service.ts
+│   │   └── prize-pools.service.ts      # covers both kind: "wheel" and "egg" — one shared table
 │   ├── storage/
 │   │   ├── client.ts                   # getStorageClient() — @supabase/supabase-js, Storage only
 │   │   └── upload.ts                    # uploadImage(file, folder) → public URL
@@ -138,12 +143,13 @@ scripts/
 prisma/
 ├── schema.prisma                    # source of truth for the schema — see [[09-database-schema]]
 ├── migrations/0_init/                # baseline migration matching what's already live
-└── seed.mts                          # seeds Categories + Themes (`npx prisma db seed`, runs via tsx)
+└── seed.mts                          # seeds Categories, Themes, the Luxury Wheel Spin prize pool
+                                        # (`npx prisma db seed`, runs via tsx)
 prisma.config.ts                     # CLI-side config (migrate/generate) — connection URL lives
                                         here, not in schema.prisma (Prisma 7)
 ```
 
-**Not built yet:** PrizePools/BirthdayPackages/SeasonalCollections admin CRUD (same pattern as
+**Not built yet:** BirthdayPackages/SeasonalCollections admin CRUD (same pattern as
 Products/Categories/Themes, not yet replicated), and the orders/custom-requests tables — see
 [[10-admin-panel]]
 for the remaining Phase 2a/2b/2c scope.

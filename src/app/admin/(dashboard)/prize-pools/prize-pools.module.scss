@@ -1,0 +1,236 @@
+@use "../../../../styles/abstracts" as *;
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  color: var(--color-text);
+  margin-bottom: var(--space-5);
+}
+
+.newLink {
+  @include focus-visible;
+
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  th,
+  td {
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    font-size: rem(13px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.deleteButton {
+  @include focus-visible;
+
+  background: none;
+  border: none;
+  color: var(--color-error);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.formLayout {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1 1 520px;
+  max-width: 640px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+
+  label {
+    font-weight: 700;
+    font-size: rem(14px);
+    color: var(--color-text);
+  }
+
+  input,
+  select {
+    @include form-input;
+
+    font-size: rem(15px);
+  }
+}
+
+.row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-end;
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+
+  legend {
+    font-weight: 700;
+    font-size: rem(14px);
+    padding-inline: var(--space-1);
+  }
+}
+
+.prizeRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.prizeRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto auto auto;
+  gap: var(--space-2);
+  align-items: center;
+
+  input,
+  select {
+    @include form-input;
+
+    font-size: rem(14px);
+  }
+}
+
+.prizeLabelInput {
+  min-width: 0;
+}
+
+.prizeWeightInput {
+  width: 64px;
+}
+
+.prizeOdds {
+  min-width: 40px;
+  font-size: rem(13px);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.moveButton {
+  @include focus-visible;
+  @include touch-target;
+
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.removeButton {
+  @include focus-visible;
+
+  background: none;
+  border: none;
+  color: var(--color-error);
+  font-weight: 700;
+  font-size: rem(13px);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.addPrizeButton {
+  @include focus-visible;
+
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error {
+  color: var(--color-error);
+  font-size: rem(14px);
+}
+
+.submit {
+  @include focus-visible;
+  @include touch-target;
+
+  align-self: flex-start;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.previewPanel {
+  position: sticky;
+  top: var(--space-6);
+  width: 100%;
+  max-width: 360px;
+}
+
+.previewHeading {
+  margin-bottom: var(--space-3);
+  font-size: rem(13px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}

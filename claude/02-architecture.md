@@ -2,15 +2,17 @@
 
 ## Phase boundary
 
-This repo is now **mid-Phase-2**, not Phase-1-only — Products, Categories, and Themes are live in a
-real Supabase Postgres database (via Prisma) and the storefront reads them for real, not from mock
-data. See [[09-database-schema]]/[[10-admin-panel]] for how that got built. PrizePool,
-BirthdayPackage, and SeasonalCollection are still Phase 1: no admin CRUD or DB rows exist for them
-yet, so Mystery Eggs, Wheel Spin, Birthday Packages, and Seasonal still read the typed mock files in
-`src/data/`. There is still no auth for customers, no payments, and no real basket. The mock data
-was deliberately shaped to match the entities documented in [[06-entities-data-model]] specifically
-so this kind of partial swap — done per-entity rather than all-at-once — was possible without
-touching component shapes. See [[07-roadmap]] for what's left in Phase 2 and what Phase 3 adds.
+This repo is now **mid-Phase-2**, not Phase-1-only — Products, Categories, Themes, and the Wheel
+Spin `PrizePool` are live in a real Supabase Postgres database (via Prisma) and the storefront reads
+them for real, not from mock data. See [[09-database-schema]]/[[10-admin-panel]] for how that got
+built. `PrizePool` rows with `kind: "egg"` (Mystery Eggs), BirthdayPackage, and SeasonalCollection
+are still Phase 1: no admin CRUD/DB rows for the first, and no admin CRUD at all for the latter two,
+so Mystery Eggs, Birthday Packages, and Seasonal still read the typed mock files in `src/data/`.
+There is still no auth for customers, no payments, and no real basket. The mock data was
+deliberately shaped to match the entities documented in [[06-entities-data-model]] specifically so
+this kind of partial swap — done per-entity (and even per-`kind`, for PrizePool) rather than
+all-at-once — was possible without touching component shapes. See [[07-roadmap]] for what's left in
+Phase 2 and what Phase 3 adds.
 
 ## Stack (Phase 1)
 
@@ -60,18 +62,21 @@ dashboard or API service to isolate yet. See [[07-roadmap]] for when that change
 
 Two parallel paths now, depending on the entity:
 
-- **Products, Categories, Themes (DB-backed):** `src/lib/catalogue.ts` (server-only, calls Prisma
-  via the shared `src/lib/db/client.ts`) → `await`ed directly inside `async` Server Component pages
-  (`src/app/page.tsx`, `src/app/shop/**`) → passed as props into presentational/client components
-  exactly as before — `ProductCard`, `ProductGrid`, `ProductFilterGrid`, and `ShopByCategory` didn't
-  change shape, they just now receive `themes`/`categories` as explicit props instead of importing
-  `@/data/themes`/`@/data` directly (two of them are Client Components, which can't `await` Prisma
-  themselves — see [[10-admin-panel]] for the equivalent pattern on the admin side). Pages using
-  this path set `export const revalidate = 60` — ISR, not full SSR — so admin edits show up within
-  a minute without hitting Postgres on every single page view.
-- **PrizePool, BirthdayPackage, SeasonalCollection (still mock):** `src/data/*.ts` (typed mock
-  arrays) → imported directly into Server Component pages → passed as props, unchanged from Phase
-  1. No fetch layer, no DB round-trip, available at build time.
+- **Products, Categories, Themes, Wheel Spin's `PrizePool` (DB-backed):** `src/lib/catalogue.ts`
+  (server-only, calls Prisma via the shared `src/lib/db/client.ts`) → `await`ed directly inside
+  `async` Server Component pages (`src/app/page.tsx`, `src/app/shop/**`, `src/app/wheel-spin/`) →
+  passed as props into presentational/client components exactly as before — `ProductCard`,
+  `ProductGrid`, `ProductFilterGrid`, `ShopByCategory`, and `WheelSpinLoader` didn't change shape,
+  they just now receive their data as explicit props instead of importing `@/data/*` directly (some
+  are Client Components, which can't `await` Prisma themselves — see [[10-admin-panel]] for the
+  equivalent pattern on the admin side, including a live preview that reuses `WheelSpinLoader`
+  directly). Pages using this path set `export const revalidate = 60` — ISR, not full SSR — so
+  admin edits show up within a minute without hitting Postgres on every single page view.
+- **Mystery Eggs' `PrizePool` rows, BirthdayPackage, SeasonalCollection (still mock):**
+  `src/data/*.ts` (typed mock arrays) → imported directly into Server Component pages → passed as
+  props, unchanged from Phase 1. No fetch layer, no DB round-trip, available at build time. Note
+  `PrizePool` itself is split by `kind` across both paths — `"wheel"` is DB-backed, `"egg"` isn't,
+  since it's the same table but only Wheel Spin has been wired to the storefront so far.
 
 `src/lib/utils.ts` has the one piece of "business logic" that predates the backend and still
 applies to the mock-data path: `pickWeighted()`, a weighted-random selector used by both WheelSpin

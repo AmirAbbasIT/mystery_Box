@@ -89,5 +89,58 @@ for (const theme of themes) {
   });
 }
 
-console.log(`Seeded ${categories.length} categories and ${themes.length} themes.`);
+// Matches src/data/prize-pools.ts's "pool-wheel-luxury" entry — kept in sync manually since
+// PrizePool has no admin-managed mock counterpart the way categories/themes barrel-export one.
+const wheelPrizePool = {
+  slug: "luxury-wheel-spin",
+  name: "Luxury Wheel Spin",
+  kind: "wheel",
+  quantity: null,
+  pricePence: 1500,
+  image: "/images/products/wheel.svg",
+  prizeItems: [
+    { label: "Enamel Charm", rarity: "common", weight: 34 },
+    { label: "Collectable Pin", rarity: "common", weight: 30 },
+    { label: "Mini Jewellery Set", rarity: "uncommon", weight: 16 },
+    { label: "Beauty Bundle", rarity: "uncommon", weight: 12 },
+    { label: "Full-Size Beauty Hero Product", rarity: "rare", weight: 6 },
+    { label: "£50 Gift Card", rarity: "jackpot", weight: 2 },
+  ],
+};
+
+const existingWheelPool = await prisma.prizePool.findUnique({ where: { slug: wheelPrizePool.slug } });
+if (existingWheelPool) {
+  await prisma.prizeItem.deleteMany({ where: { prizePoolId: existingWheelPool.id } });
+  await prisma.prizePool.update({
+    where: { id: existingWheelPool.id },
+    data: {
+      name: wheelPrizePool.name,
+      kind: wheelPrizePool.kind,
+      quantity: wheelPrizePool.quantity,
+      pricePence: wheelPrizePool.pricePence,
+      image: wheelPrizePool.image,
+      prizeItems: {
+        create: wheelPrizePool.prizeItems.map((item, index) => ({ ...item, sortOrder: index })),
+      },
+    },
+  });
+} else {
+  await prisma.prizePool.create({
+    data: {
+      slug: wheelPrizePool.slug,
+      name: wheelPrizePool.name,
+      kind: wheelPrizePool.kind,
+      quantity: wheelPrizePool.quantity,
+      pricePence: wheelPrizePool.pricePence,
+      image: wheelPrizePool.image,
+      prizeItems: {
+        create: wheelPrizePool.prizeItems.map((item, index) => ({ ...item, sortOrder: index })),
+      },
+    },
+  });
+}
+
+console.log(
+  `Seeded ${categories.length} categories, ${themes.length} themes, and the Luxury Wheel Spin prize pool.`,
+);
 await prisma.$disconnect();
