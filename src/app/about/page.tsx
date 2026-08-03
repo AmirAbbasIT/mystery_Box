@@ -8,7 +8,7 @@ import styles from "./page.module.scss";
 export const metadata: Metadata = {
   title: "About & Contact",
   description:
-    "The story behind Mystery Box UK — a small, family-run mystery gifting brand — plus how to get in touch.",
+    "The story behind Mystery Packed Gifts — a small, family-run mystery gifting brand — plus how to get in touch.",
 };
 
 export default function AboutPage() {
@@ -31,7 +31,7 @@ export default function AboutPage() {
           </div>
           <div className={styles.story}>
             <p>
-              We started Mystery Box UK because we love the reveal moment as much as our
+              We started Mystery Packed Gifts because we love the reveal moment as much as our
               customers do — that split-second where you don&rsquo;t know what you&rsquo;re
               getting, and then you do.
             </p>

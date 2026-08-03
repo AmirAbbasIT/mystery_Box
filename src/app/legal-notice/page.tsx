@@ -3,7 +3,7 @@ import styles from "./page.module.scss";
 
 export const metadata: Metadata = {
   title: "Legal Notice",
-  description: "Company information and legal notices for Mystery Box UK.",
+  description: "Company information and legal notices for Mystery Packed Gifts.",
 };
 
 export default function LegalNoticePage() {

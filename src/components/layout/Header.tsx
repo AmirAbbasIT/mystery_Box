@@ -15,7 +15,7 @@ export function Header() {
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.logo} aria-label={`${SITE_NAME} home`}>
-          <Image src="/images/brand/logo.svg" alt="" width={168} height={42} priority />
+          <Image src="/images/brand/logo.jpg" alt="" width={48} height={48} priority />
         </Link>
 
         <nav className={styles.desktopNav} aria-label="Primary">

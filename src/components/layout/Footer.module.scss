@@ -19,6 +19,11 @@
   }
 }
 
+.logo {
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+
 .brandName {
   font-family: var(--font-family-display);
   font-size: rem(24px);

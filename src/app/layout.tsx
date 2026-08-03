@@ -22,8 +22,8 @@ const bodyFont = Nunito_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Mystery Box UK | Surprise Jewellery, Beauty & Wheel Spin Gifts",
-    template: "%s | Mystery Box UK",
+    default: "Mystery Packed Gifts | Surprise Jewellery, Beauty & Wheel Spin Gifts",
+    template: "%s | Mystery Packed Gifts",
   },
   description:
     "UK mystery boxes, pink eggs and wheel spin prizes for jewellery, makeup & beauty and stationery lovers. Plus birthday packages and custom gift requests.",

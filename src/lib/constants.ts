@@ -1,4 +1,4 @@
-export const SITE_NAME = "Mystery Box UK";
+export const SITE_NAME = "Mystery Packed Gifts";
 export const SITE_TAGLINE = "Surprise gift boxes, eggs & wheel spin prizes";
 
 // TODO: replace with the real inbox before launch.
