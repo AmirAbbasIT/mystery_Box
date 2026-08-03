@@ -64,6 +64,7 @@ model Product {
   images               ProductImage[]
   themes                ProductTheme[]
   seasonalCollections SeasonalCollectionProduct[]
+  orderItems          OrderItem[]
 
   @@index([categoryId])
   @@map("products")
@@ -198,6 +199,64 @@ model SiteSettings {
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("site_settings")
+}
+
+// Phase 2c — checkout/orders. Guest checkout only (no accounts/login — see
+// claude/10-admin-panel.md's Phase 2c note): Customer is a plain email-deduped record captured at
+// checkout time, not an authenticated entity. Orders are created only from the Stripe
+// `checkout.session.completed` webhook (src/app/api/webhooks/stripe/route.ts), never optimistically
+// at "proceed to checkout" time, so a row existing here always means Stripe actually confirmed
+// payment. stripeCheckoutSessionId is unique specifically so the webhook handler can be idempotent
+// against Stripe's at-least-once delivery retries.
+model Customer {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  orders Order[]
+
+  @@map("customers")
+}
+
+model Order {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId              String   @map("customer_id") @db.Uuid
+  status                  String   @default("paid")
+  totalPence              Int      @map("total_pence")
+  stripeCheckoutSessionId String   @unique @map("stripe_checkout_session_id")
+  shippingName            String   @map("shipping_name")
+  shippingLine1           String   @map("shipping_line1")
+  shippingLine2           String?  @map("shipping_line2")
+  shippingCity            String   @map("shipping_city")
+  shippingPostcode        String   @map("shipping_postcode")
+  shippingCountry         String   @default("GB") @map("shipping_country")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+
+  @@index([customerId])
+  @@map("orders")
+}
+
+// productId is nullable + onDelete: SetNull deliberately — productName/unitPricePence are a
+// snapshot taken at order time, so deleting a Product later must not corrupt historic order
+// records (see claude/06-entities-data-model.md).
+model OrderItem {
+  id             String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String @map("order_id") @db.Uuid
+  productId      String? @map("product_id") @db.Uuid
+  productName    String @map("product_name")
+  unitPricePence Int    @map("unit_price_pence")
+  quantity       Int
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
 }
 
 // Phase 2b — persists the birthday-builder form (CustomRequestForm), replacing its previous

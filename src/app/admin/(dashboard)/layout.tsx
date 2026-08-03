@@ -13,6 +13,8 @@ const NAV_LINKS = [
   { label: "Birthday Packages", href: "/admin/birthday-packages" },
   { label: "Seasonal", href: "/admin/seasonal" },
   { label: "Custom Requests", href: "/admin/custom-requests" },
+  { label: "Orders", href: "/admin/orders" },
+  { label: "Customers", href: "/admin/customers" },
   { label: "Settings", href: "/admin/settings" },
 ];
 

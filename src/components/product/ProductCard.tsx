@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Badge, Button, Modal } from "@/components/ui";
 import { formatPrice } from "@/lib/utils";
+import { useCart } from "@/lib/cart/CartContext";
 import type { Product, Theme } from "@/types";
 import { PriceTag } from "./PriceTag";
 import styles from "./ProductCard.module.scss";
@@ -16,6 +17,18 @@ interface ProductCardProps {
 
 export function ProductCard({ product, themes }: ProductCardProps) {
   const [isPeekOpen, setIsPeekOpen] = useState(false);
+  const { addItem } = useCart();
+
+  const handleAddToBasket = () => {
+    addItem({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      image: product.images[0]?.src,
+    });
+    setIsPeekOpen(false);
+  };
   const productThemes = themes.filter((theme) => product.themeIds.includes(theme.id));
   const image = product.images[0];
 
@@ -81,8 +94,12 @@ export function ProductCard({ product, themes }: ProductCardProps) {
         <p className={styles.peekDisclaimer}>
           Contents are randomised — exact items vary by box and are not guaranteed.
         </p>
-        <Button className={styles.addButton} onClick={() => setIsPeekOpen(false)}>
-          Add to Basket — {formatPrice(product.price)}
+        <Button
+          className={styles.addButton}
+          onClick={handleAddToBasket}
+          disabled={product.stock <= 0}
+        >
+          {product.stock <= 0 ? "Out of Stock" : `Add to Basket — ${formatPrice(product.price)}`}
         </Button>
       </Modal>
     </motion.article>

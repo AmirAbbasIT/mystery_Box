@@ -1,0 +1,158 @@
+@use "../../styles/abstracts" as *;
+
+.page {
+  @include container;
+
+  padding-block: var(--space-7);
+}
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(32px);
+  margin-bottom: var(--space-6);
+}
+
+.empty {
+  text-align: center;
+  padding-block: var(--space-8);
+
+  p {
+    margin-bottom: var(--space-5);
+    color: var(--color-text-muted);
+  }
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-7);
+  grid-template-columns: 1fr;
+
+  @include desktop-up {
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+  }
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-3);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+}
+
+.imageWrapper {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.image {
+  object-fit: cover;
+}
+
+.lineBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lineName {
+  font-weight: 700;
+}
+
+.linePrice {
+  color: var(--color-text-muted);
+  font-size: rem(14px);
+}
+
+.quantityRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.quantityButton {
+  @include focus-visible;
+  @include touch-target;
+
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.quantityValue {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.lineActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  justify-self: end;
+}
+
+.lineTotal {
+  font-weight: 800;
+}
+
+.removeButton {
+  @include focus-visible;
+
+  background: none;
+  border: none;
+  color: var(--color-error);
+  font-size: rem(13px);
+  cursor: pointer;
+  padding: 0;
+}
+
+.summary {
+  position: sticky;
+  top: calc(72px + var(--space-5));
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: rem(15px);
+}
+
+.subtotal {
+  font-weight: 800;
+  font-size: rem(20px);
+}
+
+.error {
+  color: var(--color-error);
+  font-size: rem(14px);
+}
+
+.checkoutButton {
+  width: 100%;
+}

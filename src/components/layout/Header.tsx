@@ -5,11 +5,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { cx } from "@/lib/utils";
 import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
+import { useCart } from "@/lib/cart/CartContext";
 import { MobileNav } from "./MobileNav";
 import styles from "./Header.module.scss";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { itemCount } = useCart();
 
   return (
     <header className={styles.header}>
@@ -29,6 +31,11 @@ export function Header() {
             ))}
           </ul>
         </nav>
+
+        <Link href="/basket" className={styles.basketLink} aria-label={`Basket, ${itemCount} item${itemCount === 1 ? "" : "s"}`}>
+          <span aria-hidden="true">Basket</span>
+          {itemCount > 0 && <span className={styles.basketCount}>{itemCount}</span>}
+        </Link>
 
         <button
           type="button"

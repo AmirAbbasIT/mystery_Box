@@ -32,10 +32,16 @@ so far:
   flagged in [[10-admin-panel]] as something to revisit before Phase 2c (orders/customers) ships,
   since that phase adds real customer PII behind the same gate.
 - Build order: **Phase 2a catalogue content admin ✅ (including Birthday Packages/Seasonal
-  Collections) → Phase 2b custom-requests inbox ✅ → Phase 2c orders/customers** (blocked on
-  Stripe existing) — see [[10-admin-panel]] for the reasoning.
+  Collections) → Phase 2b custom-requests inbox ✅ → Phase 2c checkout/orders/customers ✅** — all
+  three phases of the original Phase 2 plan are now live. See [[10-admin-panel]] for the reasoning
+  and [[09-database-schema]] for the schema.
 - ~~`CustomRequestInput` becomes a real persisted `CustomRequest`~~ **Done** — see [[10-admin-panel]].
 - `PrizePool` odds move from hardcoded mock weights to admin-editable data (Phase 2a) — **done**.
+- ~~Checkout system (basket, Stripe, Order/OrderItem/Customer persistence, `/admin/orders` +
+  `/admin/customers`)~~ **Done (Aug 2026)** — guest checkout only, Shop Products only for v1, Stripe
+  Checkout (hosted) not Elements — see [[10-admin-panel]]'s Phase 2c section for the full build and
+  what's explicitly still deferred (admin auth upgrade, refunds, Wheel Spin/Eggs/Birthday Packages
+  at checkout).
 - **Repo restructure to a monorepo** (Turborepo or plain workspaces): `apps/web` (this storefront),
   `apps/admin`, `packages/api`, `packages/types`, `packages/ui`, shared ESLint/Prettier/TypeScript
   config — deferred indefinitely now that admin is starting embedded rather than standalone; only
@@ -44,8 +50,14 @@ so far:
 
 ## Phase 3 — growth
 
-- Customer accounts / order history (needs the `Customer`/`Order` entities already stubbed in
-  [[06-entities-data-model]]).
+- Real customer accounts (login/signup, saved addresses, a customer-facing order-history page) —
+  `Customer`/`Order` are live now (Phase 2c), but deliberately guest-checkout-only; this would be
+  the second auth system alongside the admin PIN gate, not a small add-on.
+- Wire Wheel Spin / Mystery Eggs / Birthday Packages into checkout — deliberately scoped out of
+  Phase 2c since each needs its own server-side fulfillment step a normal product line item doesn't
+  (see [[10-admin-panel]]'s Phase 2c section).
+- Admin auth upgrade beyond the shared PIN — flagged again in [[10-admin-panel]]'s Phase 2c section
+  now that `/admin/orders`/`/admin/customers` hold real customer PII behind it.
 - SEO content scaling as the catalogue grows.
 - Seasonal campaign tooling (so non-technical admin can spin up a new seasonal collection without
   a developer).

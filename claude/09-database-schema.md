@@ -1,23 +1,23 @@
 # Database Schema (Phase 2 plan)
 
-**Status: catalogue tables are live in a real Supabase Postgres database, queried via Prisma, and
-read by both the admin panel and the real storefront.** The database *engine* is Supabase-hosted
-Postgres (resolved below); the *client library* talking to it is **Prisma** (`@prisma/client` +
-`@prisma/adapter-pg`), not the `@supabase/supabase-js` REST client this doc originally assumed —
-see [[10-admin-panel]]'s Decisions locked in for why that changed. `prisma/schema.prisma` is now
-the source of truth for the schema (matching the tables below exactly); `prisma/migrations/0_init/`
-is the baseline migration recording what's already live (plus incremental migrations since —
-`prisma migrate dev` is the normal workflow now that `DIRECT_URL` is configured, not the manual
-`migrate resolve` dance the baseline needed). Two consumers, one shared client
-(`src/lib/db/client.ts`, deliberately moved out of `src/admin/` once the storefront needed it too):
-`src/admin/services/*.ts` (admin writes, all rows including inactive) and `src/lib/catalogue.ts`
-(storefront reads, active-only, shaped to match the existing `Product`/`Category`/`Theme`/
-`PrizePool` types exactly — see [[02-architecture]]'s Data flow section). `custom_requests` is now
-live too (Phase 2b — see below); `orders`/`customers` aren't written yet — Phase 2c per
-[[10-admin-panel]]. `BirthdayPackage`/`SeasonalCollection` tables exist in this schema but have no admin CRUD yet —
-those storefront pages still read `src/data/` untouched. `PrizePool` (both `kind` values) is fully
-live. `SiteSettings` (see below) is a small addition for the colour-palette feature, not part of
-the original catalogue plan.
+**Status: every table below is live in a real Supabase Postgres database, queried via Prisma —
+catalogue, custom requests, site settings, and now orders/customers/checkout too.** The database
+*engine* is Supabase-hosted Postgres (resolved below); the *client library* talking to it is
+**Prisma** (`@prisma/client` + `@prisma/adapter-pg`), not the `@supabase/supabase-js` REST client
+this doc originally assumed — see [[10-admin-panel]]'s Decisions locked in for why that changed.
+`prisma/schema.prisma` is now the source of truth for the schema (matching the tables below
+exactly); `prisma/migrations/` records the full history (`0_init` baseline plus one migration per
+feature since — `prisma migrate dev` is the normal workflow now that `DIRECT_URL` is configured).
+Three consumers, one shared client (`src/lib/db/client.ts`, deliberately moved out of `src/admin/`
+once the storefront needed it too): `src/admin/services/*.ts` (admin writes/reads, all rows
+including inactive), `src/lib/catalogue.ts` (storefront reads, active-only, shaped to match the
+existing `Product`/`Category`/`Theme`/`PrizePool`/`BirthdayPackage`/`SeasonalCollection` types
+exactly — see [[02-architecture]]'s Data flow section), and `src/lib/orders.ts` (the one place
+`orders`/`customers` rows are ever written — see below). `PrizePool` (both `kind` values),
+`BirthdayPackage`, and `SeasonalCollection` are all fully live with admin CRUD — no table in this
+schema still reads from `src/data/` at runtime (those mock files are kept only as the seed script's
+hand-mirrored reference — see [[10-admin-panel]]'s Phase 2a completion note). `SiteSettings` (see
+below) is a small addition for the colour-palette feature, not part of the original catalogue plan.
 
 ## Engine: resolved to Supabase
 
@@ -79,18 +79,51 @@ Notes:
 - `Category.priceFrom` isn't stored — it's `min(products.price_pence)` for that category, computed
   at query time (or cached/materialized later if it shows up as a real perf cost, not before).
 
-### Orders & customers (net-new — Phase 2 stubs today in `src/types/order.ts` / `customer.ts`)
+### Orders & customers (live — Phase 2c, guest checkout via Stripe Checkout)
 
 ```
 customers    (id, email unique, name, created_at)
-orders       (id, customer_id fk→customers, status text check in
-             ('pending','paid','fulfilled','cancelled'), total_pence int, created_at)
-order_items  (id, order_id fk→orders, product_id fk→products, quantity int, unit_price_pence int)
+orders       (id, customer_id fk→customers, status text check in ('paid','fulfilled','cancelled')
+             default 'paid', total_pence int, stripe_checkout_session_id unique,
+             shipping_name, shipping_line1, shipping_line2 null, shipping_city,
+             shipping_postcode, shipping_country default 'GB', created_at, updated_at)
+order_items  (id, order_id fk→orders (cascade), product_id fk→products null (set null on delete),
+             product_name, unit_price_pence int, quantity int)
 ```
 
-`order_items.unit_price_pence` is captured at order time (not read live from `products.price_pence`
-at display time) — prices change; an order must show what the customer actually paid, not today's
-price.
+Key decisions, made explicitly (see [[10-admin-panel]]'s Phase 2c section for the fuller
+walkthrough):
+- **Guest checkout only — no customer accounts/login.** `customers` exists purely so admin can look
+  someone up by email and see their order history; it's populated by an `upsert(where: {email})`,
+  never by a signup flow.
+- **An `orders` row only ever gets created by the Stripe `checkout.session.completed` webhook**
+  (`src/app/api/webhooks/stripe/route.ts` → `src/lib/orders.ts`'s `fulfillCheckoutSession()`), never
+  optimistically when the customer clicks "proceed to checkout." A row existing here always means
+  Stripe actually confirmed payment — that's also why `status` defaults to `'paid'`, not `'pending'`:
+  nothing in this build ever writes a not-yet-paid order.
+- `stripe_checkout_session_id` is `unique` specifically for webhook idempotency — Stripe delivers
+  webhooks at-least-once, so the handler checks for an existing row with that session ID first and
+  no-ops on a duplicate delivery, rather than double-charging inventory or creating two orders for
+  one payment.
+- `order_items.product_id` is **nullable with `onDelete: SetNull`**, deliberately unlike every other
+  child-table FK in this schema (which cascade). `product_name`/`unit_price_pence` are captured at
+  order time, not read live from `products` at display time — prices change and products get
+  deleted, but an order must always show what the customer actually paid for what they actually
+  bought, so the FK going null on a later product deletion must never take the historical row with
+  it.
+- Stock is decremented (`products.stock`) inside the same transaction as order creation, via
+  `updateMany` (not `update`) specifically so a since-deleted product is a silent no-op instead of a
+  thrown error — recording a confirmed payment must never fail because of an inventory
+  reconciliation edge case. **Known accepted limitation:** this decrement isn't protected against a
+  race between two simultaneous checkouts both passing the earlier stock check in
+  `createCheckoutSessionAction` — stock could theoretically go negative under concurrent purchases
+  of the last unit. Not solved here (no inventory holds/locking) — small-scale, guest-checkout,
+  no-real-traffic-yet tradeoff, revisit if it ever actually happens.
+- Cart itself (pre-checkout) has **no table** — it's client-only, `localStorage`-persisted React
+  state (`src/lib/cart/CartContext.tsx`), matching the guest-checkout/no-accounts posture. The only
+  point cart contents cross to the server is `createCheckoutSessionAction`
+  (`src/app/basket/actions.ts`), which always re-reads price/stock/active from `products` — the
+  client's cart snapshot is a UI convenience copy, never trusted for money.
 
 ### Custom requests (live — Phase 2b persistence for `CustomRequestInput`)
 
@@ -129,9 +162,12 @@ Because `src/data/*.ts` was deliberately shaped to match the entity types (see [
 — "so swapping in a real API touches only the data-fetching layer, not components"), the seed
 script is close to a direct transform: iterate each mock array, insert one row per item, resolve
 `themeIds`/`productIds` arrays into join-table inserts. No mock field needs renaming except the
-`price` → `price_pence` unit change above. `prisma/seed.mjs` does this today for Categories and
-Themes (run via `npx prisma db seed`); Products/PrizePools/BirthdayPackages/SeasonalCollections
-aren't seeded yet since their admin CRUD isn't built (see [[10-admin-panel]]).
+`price` → `price_pence` unit change above. `prisma/seed.mts` (TypeScript, run via `npx prisma db
+seed`, since the generated Prisma client is TS source — see [[10-admin-panel]]) now seeds
+Categories, Themes, Prize Pools, Birthday Packages, and Seasonal Collections this way. Products
+aren't seeded (real inventory is admin-entered, not mock-derived) and orders/customers can't be
+seeded this way at all — they're only ever created by a real Stripe webhook firing, not a
+`create()` call, so there's nothing meaningful to mirror from mock data for them.
 
 ## Firestore mapping notes (if Firebase is chosen instead)
 
@@ -157,6 +193,8 @@ aren't seeded yet since their admin CRUD isn't built (see [[10-admin-panel]]).
   the project *only* for this (`src/admin/storage/`) — Prisma still owns every Postgres query. See
   [[10-admin-panel]]'s Phase 2a table for the `ImagePicker` component this powers.
 - `products.active = false` (soft delete via flag) is what `deleteProduct()` in
-  `products.service.ts` actually does *not* use yet — it currently does a real `delete`. Revisit if
-  hard-deleting a product that's referenced by past orders ever becomes a real scenario (it isn't
-  yet, since `order_items` doesn't exist).
+  `products.service.ts` actually does *not* use yet — it currently does a real `delete`. Now that
+  `order_items` really exists and references `products`, this is a live (if still unaddressed)
+  scenario: deleting a product referenced by past orders is handled at the schema level
+  (`onDelete: SetNull` — see the Orders & customers section above), so it won't crash or corrupt
+  order history, but the admin has no warning before doing it. Revisit if that gap ever bites.

@@ -83,8 +83,17 @@ Christmas/Valentine's/Mother's Day/Easter drops. `productIds` is a real many-to-
 get assigned closer to each date, but the picker is fully wired and ready for that. The
 pages/routing exist ahead of stock so the seasonal calendar structure is already in place.
 
-## Order / OrderItem / Customer (`types/order.ts`, `types/customer.ts`)
+## Order / OrderItem / Customer (`types/order.ts`, `types/customer.ts`, DB-backed)
 
-**Phase 2 stubs, not wired to any UI.** Defined now so the shape is agreed before checkout/auth
-get built, per the original request to plan the full entity model up front. Nothing in Phase 1
-constructs these.
+**Live (Phase 2c) — guest checkout only, no customer accounts.** `Customer` is a plain
+email-deduped record (`upsert(where: {email})`), not an authenticated entity — there's no login,
+so "Customer" really just means "someone who has checked out at least once," looked up by admin via
+email search at `/admin/customers`. `Order`/`OrderItem` are only ever created by
+`src/lib/orders.ts`'s `fulfillCheckoutSession()`, called exclusively from the Stripe
+`checkout.session.completed` webhook — never optimistically when a customer starts checkout, so an
+`Order` existing always means Stripe actually confirmed payment (`OrderStatus` therefore starts at
+`"paid"`, not `"pending"` — nothing in this build ever writes a not-yet-paid order). `OrderItem`'s
+`productId` is nullable: `productName`/`unitPrice` are a snapshot taken at order time, so a later
+`Product` deletion sets the FK null instead of touching historic order data — see
+[[09-database-schema]] for the full schema-level reasoning, and [[10-admin-panel]]'s Phase 2c
+section for the end-to-end checkout flow (cart → Stripe Checkout → webhook → admin).

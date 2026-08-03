@@ -1,0 +1,75 @@
+@use "../../../../styles/abstracts" as *;
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  color: var(--color-text);
+  margin-bottom: var(--space-5);
+}
+
+.searchForm {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+
+  input {
+    @include form-input;
+
+    max-width: 320px;
+  }
+}
+
+.searchButton {
+  @include focus-visible;
+
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  th,
+  td {
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    font-size: rem(13px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text);
+  }
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+
+  dt {
+    font-size: rem(13px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-1);
+  }
+
+  dd {
+    font-weight: 600;
+  }
+}

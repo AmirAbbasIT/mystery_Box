@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SkipToContent } from "@/components/layout/SkipToContent";
 import { getActiveColorPaletteId } from "@/lib/site-settings";
+import { CartProvider } from "@/lib/cart/CartContext";
 import "./globals.scss";
 
 export const revalidate = 60;
@@ -43,10 +44,12 @@ export default async function RootLayout({
       className={`${displayFont.variable} ${bodyFont.variable}`}
     >
       <body>
-        <SkipToContent />
-        <Header />
-        <main id="main-content">{children}</main>
-        <Footer />
+        <CartProvider>
+          <SkipToContent />
+          <Header />
+          <main id="main-content">{children}</main>
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );

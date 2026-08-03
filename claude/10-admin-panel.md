@@ -1,10 +1,11 @@
 # Admin Panel (Phase 2 plan)
 
-**Status: Phase 2a catalogue content is fully built end-to-end (DB → service → admin UI) for every
-entity — Products, Categories, Themes, Prize Pools, Birthday Packages, Seasonal Collections — plus
-Phase 2b's custom-requests inbox and Site Settings. Phase 2c (orders/customers) remains the plan.**
-Decisions below were made explicitly with the user rather than assumed, since they're hard to
-reverse cheaply later — recorded here so they're not re-litigated by accident.
+**Status: all three phases are now live.** Phase 2a catalogue content is fully built end-to-end
+(DB → service → admin UI) for every entity — Products, Categories, Themes, Prize Pools, Birthday
+Packages, Seasonal Collections — plus Phase 2b's custom-requests inbox and Site Settings, and now
+Phase 2c: real guest checkout via Stripe, plus `/admin/orders`/`/admin/customers`. Decisions below
+were made explicitly with the user rather than assumed, since they're hard to reverse cheaply
+later — recorded here so they're not re-litigated by accident.
 
 ## Decisions locked in
 
@@ -242,12 +243,67 @@ that's unchanged; only the inbox itself sits behind the PIN gate. One UX tradeof
 have a built-in reset the way local component state did, and re-submitting immediately is an edge
 case not worth the extra complexity for.
 
-## Phase 2c: orders & customers
+## Phase 2c: checkout, orders & customers ✅ live (Aug 2026)
 
-Blocked on Stripe/checkout existing per [[07-roadmap]] — there's nothing for this screen to show
-until real orders exist. Once they do: order list (filter by status), order detail (line items,
-customer, status update dropdown), basic customer lookup (email search → their order history). No
-new business logic beyond what checkout already needs to write — this is read/status-update only.
+**Scope decisions locked in with the user before building** (this phase was explicitly flagged as
+needing its own scoping conversation, unlike every prior phase which just extended an established
+pattern):
+- **Guest checkout only** — no customer accounts/login. Matches every other auth decision in this
+  project (shared PIN admin, no user auth anywhere). `customers` is a plain email-deduped record
+  captured at checkout time, not an authenticated entity — see [[06-entities-data-model]].
+- **Stripe Checkout (hosted), not Stripe Elements** — redirect to Stripe's own payment page and
+  back, rather than an embedded card form. Least code and PCI/security surface, matching the
+  project's recurring "no money to spend yet" constraint (see the Hosting note above).
+- **Shop Products only for v1** — Wheel Spin, Mystery Eggs, and Birthday Packages are not
+  purchasable yet. Each has its own fulfillment wrinkle a normal product line item doesn't (a wheel
+  spin/egg purchase needs the prize resolved server-side *at the moment of purchase*, not just
+  added to a cart) — deliberately scoped out rather than bolted on.
+
+**How it actually works, end to end:**
+1. **Cart is entirely client-side** — `src/lib/cart/CartContext.tsx`, a React Context +
+   `localStorage`-persisted reducer, provided at the root layout. No cart table, no session
+   management; this is the correct-sized solution for guest-only checkout. `ProductCard`'s "Peek
+   inside" modal is the only add-to-basket entry point today; `Header` shows a live item-count
+   badge next to a `/basket` link.
+2. **`/basket`** (`BasketView.tsx`) lets the customer adjust quantity/remove lines, then submits a
+   form (cart JSON in a hidden field, same serialize-into-hidden-input pattern Prize Pools/Products
+   already use for nested data) to `createCheckoutSessionAction`
+   (`src/app/basket/actions.ts`). **The server never trusts the client's cart snapshot** — every
+   `productId` is re-looked-up against `products` for current price/stock/active before a Stripe
+   Checkout Session is created; a stale or tampered cart gets a clear inline error, not a bad
+   charge. On success, `redirect()`s straight to Stripe's hosted `session.url`.
+3. **The Stripe webhook is the only place an `Order` is ever created** — see
+   [[09-database-schema]]'s Orders & customers section for the full reasoning (idempotency,
+   why status defaults to `paid` not `pending`, the SetNull FK). Route:
+   `src/app/api/webhooks/stripe/route.ts` (raw-body signature verification via
+   `STRIPE_WEBHOOK_SECRET`) → `src/lib/orders.ts`'s `fulfillCheckoutSession()` (Customer upsert +
+   Order/OrderItem creation + stock decrement, one transaction).
+4. **`/checkout/success`** looks up the Order by `stripe_checkout_session_id` and shows a real
+   receipt if the webhook has already landed, or a generic "confirmation coming by email" message if
+   it hasn't yet (a real race — the browser's redirect back can arrive before Stripe's webhook does
+   — handled gracefully rather than erroring). Also clears the cart client-side. **`/checkout/cancel`**
+   is a simple "no payment taken, your basket is still here" page.
+5. **`/admin/orders`** (list + detail with a status dropdown: `paid → fulfilled/cancelled`) and
+   **`/admin/customers`** (list with email search + detail showing order history) are read/status-
+   update only, per the original plan — no create/delete, since every row here traces back to a
+   real Stripe payment. `src/admin/services/orders.service.ts` /
+   `customers.service.ts` own this read layer.
+
+**Requires user-supplied Stripe credentials to actually process a payment**: `STRIPE_SECRET_KEY`
+and `STRIPE_WEBHOOK_SECRET` in `.env.local` (see `.env.local.example`) — nothing in this build can
+create real Stripe keys; test-mode ones from the Stripe dashboard are enough to exercise the whole
+flow before going live.
+
+**Not addressed by this build, worth tracking:**
+- **Admin auth is still the shared PIN**, not upgraded to per-staff accounts — this is exactly the
+  point the project's own plan (see **Access control** above) said to revisit, since `/admin/orders`
+  and `/admin/customers` are now real customer PII (name, email, shipping address) behind that same
+  gate. Deliberately not blocking this build on that upgrade — implemented as planned, but flagged
+  again here since this is the trigger point the earlier note was written for.
+- Stock-decrement race under concurrent purchases of the last unit — see
+  [[09-database-schema]]'s accepted-limitation note.
+- No refund flow — cancelling an order in `/admin/orders` updates our `status` only, it does not
+  call Stripe to actually refund the charge.
 
 ## Explicitly deferred (not in this planning pass)
 

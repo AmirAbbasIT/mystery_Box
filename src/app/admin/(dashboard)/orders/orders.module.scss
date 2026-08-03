@@ -1,0 +1,138 @@
+@use "../../../../styles/abstracts" as *;
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  color: var(--color-text);
+  margin-bottom: var(--space-5);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  th,
+  td {
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    font-size: rem(13px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text);
+  }
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: rem(13px);
+  font-weight: 700;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+
+  &[data-status="paid"] {
+    background-color: rgb(122 61 194 / 15%);
+    color: var(--color-secondary);
+  }
+
+  &[data-status="fulfilled"] {
+    background-color: rgb(46 160 67 / 15%);
+    color: #1a7a30;
+  }
+
+  &[data-status="cancelled"] {
+    background-color: rgb(200 60 60 / 15%);
+    color: var(--color-error);
+  }
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+
+  dt {
+    font-size: rem(13px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-1);
+  }
+
+  dd {
+    font-weight: 600;
+  }
+}
+
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--space-6);
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+.form {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  max-width: 360px;
+
+  select {
+    @include form-input;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+
+  label {
+    font-weight: 700;
+    font-size: rem(14px);
+  }
+}
+
+.submit {
+  @include focus-visible;
+  @include touch-target;
+
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.searchForm {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+
+  input {
+    @include form-input;
+
+    max-width: 320px;
+  }
+}
