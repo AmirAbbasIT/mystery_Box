@@ -12,7 +12,7 @@ not a clean split anymore. For the full Phase 2 plan, see [[09-database-schema]]
 |---|---|---|
 | Catalogue DB schema | ✅ | `prisma/schema.prisma` (source of truth) + `prisma/migrations/0_init/` — live and seeded in Supabase Postgres |
 | Admin PIN auth | ✅ | `src/proxy.ts` gate + `src/admin/auth/`; generate a PIN hash with `node scripts/hash-admin-pin.mjs <pin>` and set `ADMIN_PIN_HASH`/`ADMIN_SESSION_SECRET` before `/admin` will work |
-| Services layer | 🟡 | `src/admin/services/{products,categories,themes,prize-pools}.service.ts` (Prisma-backed) — BirthdayPackages/SeasonalCollections not yet built |
+| Services layer | 🟡 | `src/admin/services/{products,categories,themes,prize-pools,custom-requests,site-settings}.service.ts` (Prisma-backed) — BirthdayPackages/SeasonalCollections not yet built |
 | `/admin/products` | ✅ | List, create, edit, delete, real image upload (`ImagePicker`, multiple + alt text), plus a live preview panel (reuses the real `ProductCard` styles) that updates as the form is filled in |
 | `/admin/categories` | ✅ | List, create, edit, delete, real image upload (`ImagePicker`, single) — delete is blocked with a friendly message (not a crash) if products still reference the category |
 | `/admin/themes` | ✅ | List, create, edit, delete, plus a live colour-swatch preview — first real visual use of `colorSwatch` anywhere in the app (the storefront's filter chips don't use it) |
@@ -20,8 +20,9 @@ not a clean split anymore. For the full Phase 2 plan, see [[09-database-schema]]
 | Image storage | ✅ | Supabase Storage, public `catalogue-images` bucket (`node scripts/create-storage-bucket.mjs`) — not the database, not `public/images/`; see [[09-database-schema]] |
 | Storefront wired to DB | ✅ | `src/lib/catalogue.ts` — `/`, `/shop`, `/shop/{jewellery,makeup-beauty,stationery}`, `/wheel-spin`, `/mystery-eggs` read real data now, not `src/data/`. ISR (`revalidate = 60`), not full SSR. |
 | `/admin/settings` | ✅ | Site-wide colour palette picker — 4 curated presets (not a full theme editor), applied instantly across the whole storefront via `revalidatePath('/', 'layout')`. Live preview wraps real `Button`/`Badge`/`PriceTag` in a scoped `data-color-theme` div — same CSS rule as the site-wide one, zero duplicated colour values. Singleton (`SiteSettings`, one DB row), not the usual list/new/[id] pattern. |
+| `/admin/custom-requests` | ✅ | Phase 2b — list + detail (no create/delete, customer-originated only), status (`new→contacted→quoted→completed/archived`) + staff notes. `CustomRequestForm` (birthday builder) now really persists instead of faking a confirmation. |
 | `/admin/birthday-packages`, `/admin/seasonal-collections` | ⬜ | Not built — same pattern as Products/Categories/Themes/Prize Pools, see [[10-admin-panel]] |
-| `/admin/custom-requests`, `/admin/orders`, `/admin/customers` | ⬜ | Phase 2b/2c, blocked on scope per [[10-admin-panel]] |
+| `/admin/orders`, `/admin/customers` | ⬜ | Phase 2c, blocked on Stripe/checkout existing per [[10-admin-panel]] |
 
 **To run this locally:** copy `.env.local.example` to `.env.local`, fill in `DATABASE_URL`/
 `DIRECT_URL` from your Supabase project's connection strings and `SUPABASE_URL`/`SUPABASE_SECRET_KEY`
@@ -40,11 +41,11 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
 | `/mystery-eggs` | ✅ **DB-backed** | Tier selector (single/5/10/15), interactive crack-to-reveal per egg, odds accordion, real `PrizePool`/`PrizeItem` (`kind: "egg"`); friendly "check back soon" empty state if no egg tiers exist |
 | `/wheel-spin` | ✅ **DB-backed** | Interactive GSAP wheel, confetti + reveal on win, published odds table, real `PrizePool`/`PrizeItem`; friendly "check back soon" empty state (not a crash) if no wheel pool exists |
 | `/birthday-packages` | ✅ | Index linking to kids/adult-party |
-| `/birthday-packages/kids` | ✅ | Kids packages + custom request builder (defaults to "kids") |
-| `/birthday-packages/adult-party` | ✅ | Adult packages + custom request builder (defaults to "adult") |
+| `/birthday-packages/kids` | ✅ | Kids packages + "Make a Custom Request" CTA linking to `/custom-request` (no longer embeds the form directly — see below) |
+| `/birthday-packages/adult-party` | ✅ | Adult packages + same CTA |
+| `/custom-request` | ✅ | Dedicated page for `CustomRequestForm` — a custom gift-box-packing request for one recipient (not a party booking, not multi-person — budget is "per box"). Previously embedded twice (once per birthday-packages audience page, with a `defaultRecipientType` prop); now one page, one form, the in-form Kids/Adult toggle handles recipient type. |
 | `/seasonal` | ✅ | Christmas/Valentine's/Mother's Day/Easter collection cards with date ranges |
-| `/about` | ✅ | Brand story + trust signals |
-| `/contact` | ✅ | Contact form + email fallback |
+| `/about` | ✅ | **Merged with the old `/contact`** — brand story + trust signals + a "Get in Touch" section (`ContactForm` + email fallback). `/contact` now permanently redirects here (`next.config.ts`). |
 | `/legal-notice` | ✅ | Placeholder template — see Pre-launch TODOs |
 | 404 | ✅ | Custom not-found page |
 
@@ -79,8 +80,9 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
 
 - Real basket/checkout — `StickyAddToBasket` and product "Add to Basket" buttons are
   presentational only (local confirmation state, no persistence).
-- Any form submission persistence — `CustomRequestForm`/`ContactForm` show a static confirmation,
-  nothing is sent anywhere.
+- `ContactForm` submission persistence — still shows a static confirmation, nothing is sent
+  anywhere. `CustomRequestForm` is the exception now (Phase 2b — see above), the only form that
+  actually persists.
 - Product detail pages (`/shop/[category]/[product]`) — deliberately not built; the "reveal
   theatre" lives in Wheel Spin/Mystery Eggs instead, and the transparency panel covers the
   "what's inside" need at the card level via a modal.

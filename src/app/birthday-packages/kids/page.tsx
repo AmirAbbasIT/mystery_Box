@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { birthdayPackages } from "@/data";
-import { CustomRequestForm } from "@/components/forms";
+import { Button } from "@/components/ui";
 import { PackageCard } from "../PackageCard";
 import styles from "../page.module.scss";
 
@@ -27,8 +27,8 @@ export default function KidsBirthdayPage() {
 
       <section className={styles.customSection}>
         <h2>Want something custom?</h2>
-        <p>Tell us the occasion, age and budget — we&rsquo;ll put together a quote.</p>
-        <CustomRequestForm defaultRecipientType="kids" />
+        <p>Tell us the occasion, age and budget — we&rsquo;ll put together a quote for a mystery box packed just for them.</p>
+        <Button href="/custom-request">Make a Custom Request</Button>
       </section>
     </div>
   );

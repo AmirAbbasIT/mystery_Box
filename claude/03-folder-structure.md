@@ -27,11 +27,12 @@ mystery_box/
 │   │   ├── birthday-packages/
 │   │   │   ├── page.tsx
 │   │   │   ├── PackageCard.tsx        # route-colocated, shared by index/kids/adult-party
-│   │   │   ├── kids/page.tsx
+│   │   │   ├── kids/page.tsx            # CTA links to /custom-request, doesn't embed the form
 │   │   │   └── adult-party/page.tsx
+│   │   ├── custom-request/page.tsx      # CustomRequestForm's only home now — one page, no
+│   │   │                                  # defaultRecipientType prop, in-form Kids/Adult toggle
 │   │   ├── seasonal/page.tsx
-│   │   ├── about/page.tsx
-│   │   ├── contact/page.tsx
+│   │   ├── about/page.tsx                # merged with the old contact/ — see [[08-features]]
 │   │   └── legal-notice/page.tsx
 │   ├── components/
 │   │   ├── layout/       # Header, MobileNav, Footer, SkipToContent
@@ -39,7 +40,8 @@ mystery_box/
 │   │   ├── product/       # PriceTag, ProductCard, CategoryCard, ProductGrid,
 │   │   │                  # ProductFilterGrid (theme/sort filtering), CategoryShopSection
 │   │   ├── animations/    # WheelSpin/, EggReveal/, RevealPanel/, ConfettiBurst.ts
-│   │   ├── forms/          # CustomRequestForm (birthday builder), ContactForm
+│   │   ├── forms/          # CustomRequestForm (birthday builder, now persists — see lib/), ContactForm
+│   │   │                    # (still static-confirmation-only), custom-request-actions.ts
 │   │   └── ui/             # Button, Badge, Modal, Accordion, StickyAddToBasket
 │   ├── data/                # typed mock catalogue — PrizePool/BirthdayPackage/SeasonalCollection
 │   │                          # only now (Products/Categories/Themes moved to the DB — see below)
@@ -53,8 +55,9 @@ mystery_box/
 │   │   │                        # getCategories, getCategoryBySlug, getThemes, getWheelPrizePool,
 │   │   │                        # getEggPrizePools — see [[02-architecture]]
 │   │   ├── color-palettes.ts    # the 4 selectable palette presets — see [[04-design-system]]
-│   │   └── site-settings.ts     # getActiveColorPaletteId() — falls back to default on error
-│   │                              rather than throwing, unlike catalogue.ts (see [[10-admin-panel]])
+│   │   ├── site-settings.ts     # getActiveColorPaletteId() — falls back to default on error
+│   │   │                          rather than throwing, unlike catalogue.ts (see [[10-admin-panel]])
+│   │   └── custom-requests.ts    # createCustomRequest() — public write, no admin auth involved
 │   └── hooks/                  # usePrefersReducedMotion, useMediaQuery
 ├── eslint.config.mjs, .prettierrc.json, .stylelintrc.json, next.config.ts, tsconfig.json
 ```
@@ -123,18 +126,22 @@ src/
 │       │   │                            # spinning preview (both kinds, reuses WheelSpinLoader)
 │       │   ├── page.tsx, new/page.tsx, [id]/page.tsx, PrizePoolForm.tsx, actions.ts
 │       │   └── prize-pools.module.scss
-│       └── settings/                  # singleton, not list/new/[id] — see [[10-admin-panel]]
-│           ├── page.tsx                  # fetches the active palette id
-│           ├── SettingsForm.tsx           # swatch picker + live preview (data-color-theme div)
-│           ├── actions.ts                  # revalidatePath('/', 'layout') — affects the whole site
-│           └── settings.module.scss
+│       ├── settings/                  # singleton, not list/new/[id] — see [[10-admin-panel]]
+│       │   ├── page.tsx                  # fetches the active palette id
+│       │   ├── SettingsForm.tsx           # swatch picker + live preview (data-color-theme div)
+│       │   ├── actions.ts                  # revalidatePath('/', 'layout') — affects the whole site
+│       │   └── settings.module.scss
+│       └── custom-requests/           # list + detail only, no new/ — customer-originated only
+│           ├── page.tsx, [id]/page.tsx, CustomRequestDetailForm.tsx, actions.ts
+│           └── custom-requests.module.scss
 ├── admin/                           # everything admin-write-specific, not routes — see above
 │   ├── services/
 │   │   ├── products.service.ts        # list/get/create/update/delete — see [[10-admin-panel]]
 │   │   ├── categories.service.ts
 │   │   ├── themes.service.ts
 │   │   ├── prize-pools.service.ts       # covers both kind: "wheel" and "egg" — one shared table
-│   │   └── site-settings.service.ts      # singleton get-or-create — see [[09-database-schema]]
+│   │   ├── site-settings.service.ts      # singleton get-or-create — see [[09-database-schema]]
+│   │   └── custom-requests.service.ts    # list/get/update-status — never creates a row (see lib/)
 │   ├── storage/
 │   │   ├── client.ts                   # getStorageClient() — @supabase/supabase-js, Storage only
 │   │   └── upload.ts                    # uploadImage(file, folder) → public URL

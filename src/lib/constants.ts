@@ -14,13 +14,12 @@ export const NAV_LINKS: NavLink[] = [
   { label: "Mystery Eggs", href: "/mystery-eggs" },
   { label: "Wheel Spin", href: "/wheel-spin" },
   { label: "Birthday Packages", href: "/birthday-packages" },
+  { label: "Custom Request", href: "/custom-request" },
   { label: "Seasonal", href: "/seasonal" },
-  { label: "About Us", href: "/about" },
-  { label: "Contact Us", href: "/contact" },
+  { label: "About & Contact", href: "/about" },
 ];
 
 export const FOOTER_LINKS: NavLink[] = [
-  { label: "About Us", href: "/about" },
-  { label: "Contact Us", href: "/contact" },
+  { label: "About & Contact", href: "/about" },
   { label: "Legal Notice", href: "/legal-notice" },
 ];

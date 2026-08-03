@@ -1,17 +1,14 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useActionState, useId, useState } from "react";
 import { Button } from "@/components/ui";
 import type { CustomRequestInput, RecipientType } from "@/types";
+import { submitCustomRequestAction } from "./custom-request-actions";
 import styles from "./CustomRequestForm.module.scss";
 
-interface CustomRequestFormProps {
-  defaultRecipientType?: RecipientType;
-}
-
-function initialState(recipientType: RecipientType): CustomRequestInput {
+function initialValues(): CustomRequestInput {
   return {
-    recipientType,
+    recipientType: "kids",
     ageRange: "",
     occasion: "",
     themePreference: "",
@@ -22,11 +19,9 @@ function initialState(recipientType: RecipientType): CustomRequestInput {
   };
 }
 
-// No backend yet — Phase 2 wires this to the CustomRequest API. For now it
-// validates client-side and shows a static confirmation.
-export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomRequestFormProps) {
-  const [values, setValues] = useState<CustomRequestInput>(() => initialState(defaultRecipientType));
-  const [isSubmitted, setIsSubmitted] = useState(false);
+export function CustomRequestForm() {
+  const [state, formAction, pending] = useActionState(submitCustomRequestAction, {});
+  const [values, setValues] = useState<CustomRequestInput>(initialValues);
   const formId = useId();
 
   const handleChange = <K extends keyof CustomRequestInput>(
@@ -36,34 +31,20 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
     setValues((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSubmitted(true);
-  };
-
-  if (isSubmitted) {
+  if (state.success) {
     return (
       <div className={styles.confirmation} role="status">
         <h3>Request received!</h3>
         <p>
-          Thanks {values.contactName || "there"} — we&rsquo;ll email{" "}
-          {values.contactEmail || "you"} within 1–2 working days with a custom quote.
+          Thanks {state.submittedName || "there"} — we&rsquo;ll email{" "}
+          {state.submittedEmail || "you"} within 1–2 working days with a custom quote.
         </p>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setIsSubmitted(false);
-            setValues(initialState(defaultRecipientType));
-          }}
-        >
-          Submit another request
-        </Button>
       </div>
     );
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form className={styles.form} action={formAction}>
       <div className={styles.field}>
         <span className={styles.legend}>Who&rsquo;s it for?</span>
         <div className={styles.radioRow} role="radiogroup" aria-label="Recipient">
@@ -71,24 +52,25 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
             <label key={type} className={styles.radioLabel}>
               <input
                 type="radio"
-                name={`${formId}-recipientType`}
+                name="recipientType"
                 value={type}
                 checked={values.recipientType === type}
                 onChange={() => handleChange("recipientType", type)}
               />
-              {type === "kids" ? "Kids" : "Adult"}
+              {type === "kids" ? "Kid" : "Adult"}
             </label>
           ))}
         </div>
       </div>
 
       <div className={styles.field}>
-        <label htmlFor={`${formId}-ageRange`}>Age range</label>
+        <label htmlFor={`${formId}-ageRange`}>Age</label>
         <input
           id={`${formId}-ageRange`}
+          name="ageRange"
           type="text"
           required
-          placeholder="e.g. 7-9"
+          placeholder="e.g. 8"
           value={values.ageRange}
           onChange={(event) => handleChange("ageRange", event.target.value)}
         />
@@ -98,6 +80,7 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
         <label htmlFor={`${formId}-occasion`}>Occasion</label>
         <input
           id={`${formId}-occasion`}
+          name="occasion"
           type="text"
           required
           placeholder="e.g. 8th birthday party"
@@ -110,6 +93,7 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
         <label htmlFor={`${formId}-theme`}>Theme preference (optional)</label>
         <input
           id={`${formId}-theme`}
+          name="themePreference"
           type="text"
           placeholder="e.g. pastel, sparkly, unicorns"
           value={values.themePreference}
@@ -118,9 +102,10 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
       </div>
 
       <div className={styles.field}>
-        <label htmlFor={`${formId}-budget`}>Budget per person: £{values.budget}</label>
+        <label htmlFor={`${formId}-budget`}>Budget for this box: £{values.budget}</label>
         <input
           id={`${formId}-budget`}
+          name="budget"
           type="range"
           min={5}
           max={50}
@@ -134,6 +119,7 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
         <label htmlFor={`${formId}-notes`}>Anything else? (optional)</label>
         <textarea
           id={`${formId}-notes`}
+          name="notes"
           rows={3}
           value={values.notes}
           onChange={(event) => handleChange("notes", event.target.value)}
@@ -145,6 +131,7 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
           <label htmlFor={`${formId}-name`}>Your name</label>
           <input
             id={`${formId}-name`}
+            name="contactName"
             type="text"
             required
             autoComplete="name"
@@ -156,6 +143,7 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
           <label htmlFor={`${formId}-email`}>Your email</label>
           <input
             id={`${formId}-email`}
+            name="contactEmail"
             type="email"
             required
             autoComplete="email"
@@ -165,8 +153,14 @@ export function CustomRequestForm({ defaultRecipientType = "kids" }: CustomReque
         </div>
       </div>
 
-      <Button type="submit" size="lg">
-        Send Custom Request
+      {state.error && (
+        <p className={styles.error} role="alert">
+          {state.error}
+        </p>
+      )}
+
+      <Button type="submit" size="lg" disabled={pending}>
+        {pending ? "Sending…" : "Send Custom Request"}
       </Button>
     </form>
   );

@@ -199,3 +199,24 @@ model SiteSettings {
 
   @@map("site_settings")
 }
+
+// Phase 2b — persists the birthday-builder form (CustomRequestForm), replacing its previous
+// static-confirmation-only behaviour. Public writes (the customer-facing form), admin-only reads
+// and status updates — see src/lib/custom-requests.ts vs src/admin/services/custom-requests.service.ts.
+model CustomRequest {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientType   String   @map("recipient_type")
+  ageRange        String   @map("age_range")
+  occasion        String
+  themePreference String?  @map("theme_preference")
+  budgetPence     Int      @map("budget_pence")
+  notes           String?
+  contactName     String   @map("contact_name")
+  contactEmail    String   @map("contact_email")
+  status          String   @default("new")
+  staffNotes      String?  @map("staff_notes")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("custom_requests")
+}

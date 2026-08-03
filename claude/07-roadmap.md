@@ -31,11 +31,11 @@ so far:
 - **Admin access starts as a shared PIN/passphrase gate**, not per-staff accounts — explicitly
   flagged in [[10-admin-panel]] as something to revisit before Phase 2c (orders/customers) ships,
   since that phase adds real customer PII behind the same gate.
-- Build order: **Phase 2a catalogue content admin → Phase 2b custom-requests inbox → Phase 2c
-  orders/customers** (blocked on Stripe existing) — see [[10-admin-panel]] for the reasoning.
-- `CustomRequestInput` becomes a real persisted `CustomRequest` with a POST endpoint, replacing the
-  static-confirmation form (Phase 2b).
-- `PrizePool` odds move from hardcoded mock weights to admin-editable data (Phase 2a).
+- Build order: **Phase 2a catalogue content admin ✅ → Phase 2b custom-requests inbox ✅ → catalog
+  completion (Birthday Packages/Seasonal Collections) → Phase 2c orders/customers** (blocked on
+  Stripe existing) — see [[10-admin-panel]] for the reasoning.
+- ~~`CustomRequestInput` becomes a real persisted `CustomRequest`~~ **Done** — see [[10-admin-panel]].
+- `PrizePool` odds move from hardcoded mock weights to admin-editable data (Phase 2a) — **done**.
 - **Repo restructure to a monorepo** (Turborepo or plain workspaces): `apps/web` (this storefront),
   `apps/admin`, `packages/api`, `packages/types`, `packages/ui`, shared ESLint/Prettier/TypeScript
   config — deferred indefinitely now that admin is starting embedded rather than standalone; only

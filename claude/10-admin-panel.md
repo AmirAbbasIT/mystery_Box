@@ -197,14 +197,19 @@ admin action here is. The live preview is the same `data-color-theme` attribute 
 site-wide, just scoped to a `<div>` instead of `<html>` — real `Button`/`Badge`/`PriceTag`
 components, zero duplicated colour values between the preview and the real site.
 
-## Phase 2b: custom-requests inbox
+## Phase 2b: custom-requests inbox ✅ live
 
-`CustomRequestForm` (already live, currently shows a static confirmation — see [[08-features]])
-starts POSTing through `custom-requests.service.ts` into the `custom_requests` table instead. The
-admin inbox is list + detail only (no create — submissions are always customer-originated): filter
-by `status`, read the request, add `staff_notes`, move status through
-`new → contacted → quoted → completed/archived`. No auth needed on the public form side — that's
-unchanged; only the inbox itself sits behind the PIN gate.
+`CustomRequestForm` now POSTs through `src/lib/custom-requests.ts` (a public, create-only write —
+no admin auth involved, since this is a customer submitting a request) into the `custom_requests`
+table, replacing the old local-only `setIsSubmitted(true)` fake confirmation. `/admin/custom-requests`
+is list + detail only (no create/delete — submissions are always customer-originated and kept as a
+permanent record, not deleted): the list shows status/contact/occasion/budget/date; the detail page
+shows every submitted field read-only plus an editable `status` + `staff_notes` form, moving status
+through `new → contacted → quoted → completed/archived`. No auth needed on the public form side —
+that's unchanged; only the inbox itself sits behind the PIN gate. One UX tradeoff accepted: the old
+"Submit another request" reset button is gone — `useActionState`'s persisted success state doesn't
+have a built-in reset the way local component state did, and re-submitting immediately is an edge
+case not worth the extra complexity for.
 
 ## Phase 2c: orders & customers
 

@@ -12,9 +12,9 @@ is the baseline migration recording what's already live (plus incremental migrat
 (`src/lib/db/client.ts`, deliberately moved out of `src/admin/` once the storefront needed it too):
 `src/admin/services/*.ts` (admin writes, all rows including inactive) and `src/lib/catalogue.ts`
 (storefront reads, active-only, shaped to match the existing `Product`/`Category`/`Theme`/
-`PrizePool` types exactly — see [[02-architecture]]'s Data flow section). `orders`/`customers`/
-`custom_requests` tables (see below) aren't written yet — Phase 2b/2c per [[10-admin-panel]].
-`BirthdayPackage`/`SeasonalCollection` tables exist in this schema but have no admin CRUD yet —
+`PrizePool` types exactly — see [[02-architecture]]'s Data flow section). `custom_requests` is now
+live too (Phase 2b — see below); `orders`/`customers` aren't written yet — Phase 2c per
+[[10-admin-panel]]. `BirthdayPackage`/`SeasonalCollection` tables exist in this schema but have no admin CRUD yet —
 those storefront pages still read `src/data/` untouched. `PrizePool` (both `kind` values) is fully
 live. `SiteSettings` (see below) is a small addition for the colour-palette feature, not part of
 the original catalogue plan.
@@ -92,7 +92,7 @@ order_items  (id, order_id fk→orders, product_id fk→products, quantity int, 
 at display time) — prices change; an order must show what the customer actually paid, not today's
 price.
 
-### Custom requests (net-new — Phase 2 persistence for `CustomRequestInput`)
+### Custom requests (live — Phase 2b persistence for `CustomRequestInput`)
 
 ```
 custom_requests (id, recipient_type text check in ('kids','adult'), age_range, occasion,
@@ -104,7 +104,10 @@ custom_requests (id, recipient_type text check in ('kids','adult'), age_range, o
 ```
 
 `status`/`staff_notes` are the only fields not already in `CustomRequestInput` — added so
-[[10-admin-panel]]'s inbox has something to triage against.
+[[10-admin-panel]]'s inbox has something to triage against. Two separate write paths, same
+split as the catalogue entities: `src/lib/custom-requests.ts` (public, create-only — the
+customer-facing form, no admin auth) vs `src/admin/services/custom-requests.service.ts`
+(admin-only, list/get/update-status — never creates a row).
 
 ### Site Settings (live — singleton, not a catalogue entity)
 

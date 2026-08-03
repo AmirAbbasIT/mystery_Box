@@ -5,6 +5,7 @@ export interface CustomRequestInput {
   ageRange: string;
   occasion: string;
   themePreference?: string;
+  /** GBP — a custom gift-box-packing request for one recipient, not a party/multi-person quote. */
   budget: number;
   notes?: string;
   contactName: string;

@@ -59,13 +59,18 @@ plain string list (not structured line items) — good enough for Phase 1 displa
 become a list of `Product`/`PrizePool` references in Phase 2 if packages need real inventory
 tracking.
 
-## CustomRequestInput (`types/custom-request.ts`)
+## CustomRequestInput (`types/custom-request.ts`, DB-backed — Phase 2b, live)
 
-Backs the guided birthday builder form (`components/forms/CustomRequestForm.tsx`) — recipient
-type, age range, occasion, theme preference, budget, notes, contact details. **Not persisted
-anywhere yet** — the form validates client-side and shows a static confirmation. Phase 2: this
-becomes a real `CustomRequest` entity with a POST endpoint, replacing the "email us" flow the old
-site relied on.
+Backs `CustomRequestForm` at its own dedicated `/custom-request` page — recipient type, age range,
+occasion, theme preference, budget, notes, contact details. **This is a custom gift-box-packing
+request for one recipient, not a party-booking or multi-person quote** — `budget` is GBP *per
+box*, not per attendee (an earlier version of this form was framed around party planning with a
+per-person budget; that framing was deliberately dropped). Originally embedded twice, once per
+`/birthday-packages/{kids,adult-party}` page via a `defaultRecipientType` prop — now one form, one
+page, with an in-form Kids/Adult toggle instead. Persisted via `src/lib/custom-requests.ts` (public
+write, no admin auth) into the `custom_requests` table, replacing the old client-only
+`setIsSubmitted(true)` fake confirmation; triaged at `/admin/custom-requests` — see
+[[10-admin-panel]].
 
 ## SeasonalCollection (`types/seasonal.ts`, `data/seasonal.ts`)
 
