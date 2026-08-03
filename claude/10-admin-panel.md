@@ -1,8 +1,10 @@
 # Admin Panel (Phase 2 plan)
 
-**Status: Products is built end-to-end (DB → service → admin UI); the rest of this doc is still
-the plan.** Decisions below were made explicitly with the user rather than assumed, since they're
-hard to reverse cheaply later — recorded here so they're not re-litigated by accident.
+**Status: Phase 2a catalogue content is fully built end-to-end (DB → service → admin UI) for every
+entity — Products, Categories, Themes, Prize Pools, Birthday Packages, Seasonal Collections — plus
+Phase 2b's custom-requests inbox and Site Settings. Phase 2c (orders/customers) remains the plan.**
+Decisions below were made explicitly with the user rather than assumed, since they're hard to
+reverse cheaply later — recorded here so they're not re-litigated by accident.
 
 ## Decisions locked in
 
@@ -156,8 +158,8 @@ Phase 1 pages don't hit the database yet, so this class of error can't happen th
 | Categories ✅ live | table: name, slug, product count | name, slug, tagline, hero image (real upload via `ImagePicker`, single) | `src/data/categories.ts` |
 | Themes ✅ live | table: swatch dot, name, slug, product count | name, slug, colour swatch (colour picker + hex input), description — **plus a live preview panel** (see below) | `src/data/themes.ts` |
 | Prize Pools ✅ live (wheel only) | table: name, kind, price, prize count | name, slug, kind, quantity (egg only), price, image (real upload via `ImagePicker`), **nested prize-item editor** (label, rarity, weight, reorder via ↑/↓, live odds %) — **plus a live spinning preview** for `kind: "wheel"` (see below) | `src/data/prize-pools.ts` |
-| Birthday Packages | table: name, audience, price from | name, slug, audience, description, price from, includes (list), age range, themes | `src/data/birthday-packages.ts` |
-| Seasonal Collections | table: name, date range | name, slug, description, start/end date, hero image, product picker | `src/data/seasonal.ts` |
+| Birthday Packages ✅ live | table: name, audience, price from | name, slug, audience, description, price from, includes (list), age range, themes (multi-select) | `src/data/birthday-packages.ts` |
+| Seasonal Collections ✅ live | table: name, date range, product count | name, slug, description, start/end date, hero image, product picker (multi-select) | `src/data/seasonal.ts` |
 
 Each list/form pair is a thin admin page calling its matching service's `list()`/`get()`/
 `create()`/`update()` — no admin-specific business logic beyond form validation. One exception:
@@ -196,6 +198,35 @@ all data" pattern from Next's own docs, not something scoped to one route the wa
 admin action here is. The live preview is the same `data-color-theme` attribute trick used
 site-wide, just scoped to a `<div>` instead of `<html>` — real `Button`/`Badge`/`PriceTag`
 components, zero duplicated colour values between the preview and the real site.
+
+## Phase 2a completion note: Birthday Packages & Seasonal Collections (Aug 2026)
+
+Both built the same day, replicating the Products/Prize Pools pattern exactly rather than
+inventing a new shape — see `src/admin/services/birthday-packages.service.ts` and
+`seasonal-collections.service.ts`, and `/admin/birthday-packages` + `/admin/seasonal`. Notes:
+
+- **The Prisma schema and initial migration already had these models** (`BirthdayPackage`,
+  `BirthdayPackageInclude`, `BirthdayPackageTheme`, `SeasonalCollection`,
+  `SeasonalCollectionProduct`) — written ahead of time in the original `0_init` migration per the
+  user's original ask to plan the full entity model up front (see [[06-entities-data-model]]). Only
+  the service layer, admin CRUD, storefront wiring, and seed data were missing; no new migration
+  was needed for this build.
+- **`includes`** (Birthday Packages) is a real one-to-many table (`birthday_package_includes`,
+  ordered by `sortOrder`), not a plain string array — same delete-then-recreate-on-update pattern as
+  `PrizeItem`/`ProductImage`, exposed to the admin form as a one-line-per-item textarea (same UX as
+  Products' `whatCouldBeInside`).
+- **`themeIds`** (Birthday Packages) and **`productIds`** (Seasonal Collections) are both
+  many-to-many join tables, rendered as a scrollable checkbox-fieldset multi-select in their forms —
+  identical mechanism to Products' theme picker.
+- **`src/data/birthday-packages.ts` and `src/data/seasonal.ts` were deliberately kept in the repo**,
+  matching the precedent already set by `categories.ts`/`themes.ts`/`products.ts`/`prize-pools.ts`:
+  no runtime code imports them anymore, but `prisma/seed.mts` mirrors their exact content by hand, so
+  they stay as the readable source-of-truth for what the dev seed reproduces. Not deleted, not dead
+  weight — a deliberate convention, not an oversight.
+- Storefront pages (`/birthday-packages`, `/birthday-packages/kids`, `/birthday-packages/adult-party`,
+  `/seasonal`) now call `getBirthdayPackages()`/`getSeasonalCollections()`
+  (`src/lib/catalogue.ts`) instead of importing the mock arrays — zero component/type shape changes,
+  same as every prior catalogue-to-DB swap this project has done.
 
 ## Phase 2b: custom-requests inbox ✅ live
 

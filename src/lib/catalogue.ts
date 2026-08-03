@@ -3,18 +3,18 @@ import type { Product, ProductImage, AgeSuitability } from "@/types/product";
 import type { Category, CategorySlug } from "@/types/category";
 import type { Theme } from "@/types/theme";
 import type { PrizePool } from "@/types/prize-pool";
+import type { BirthdayPackage, BirthdayAudience } from "@/types/birthday-package";
+import type { SeasonalCollection } from "@/types/seasonal";
 import type { Prisma } from "@/generated/prisma/client";
 
 /**
- * Storefront-facing read layer — Products/Categories/Themes/Wheel-Spin-PrizePool are live in
- * Postgres now (see claude/09-database-schema.md), so these replace the equivalent src/data/*.ts
- * mock arrays for the pages that have been wired up. Deliberately separate from
- * src/admin/services/*.ts: those return admin-shaped records for CRUD screens; these return the
- * exact same Product/Category/Theme/PrizePool shapes the storefront components already expect, so
- * components needed zero shape changes — only their data source changed.
- *
- * BirthdayPackage/SeasonalCollection are NOT here yet — no admin CRUD for those, so their pages
- * still read src/data/*.ts.
+ * Storefront-facing read layer — Products/Categories/Themes/Prize Pools/Birthday
+ * Packages/Seasonal Collections are all live in Postgres now (see claude/09-database-schema.md),
+ * replacing the equivalent src/data/*.ts mock arrays for the pages that have been wired up.
+ * Deliberately separate from src/admin/services/*.ts: those return admin-shaped records for CRUD
+ * screens; these return the exact same Product/Category/Theme/PrizePool/BirthdayPackage/
+ * SeasonalCollection shapes the storefront components already expect, so components needed zero
+ * shape changes — only their data source changed.
  */
 
 const PRODUCT_INCLUDE = {
@@ -145,4 +145,66 @@ export async function getEggPrizePools(): Promise<PrizePool[]> {
     orderBy: { quantity: "asc" },
   });
   return rows.map(toPrizePool);
+}
+
+const BIRTHDAY_PACKAGE_INCLUDE = {
+  includes: { orderBy: { sortOrder: "asc" } },
+  themes: true,
+} satisfies Prisma.BirthdayPackageInclude;
+
+type BirthdayPackageWithRelations = Prisma.BirthdayPackageGetPayload<{
+  include: typeof BIRTHDAY_PACKAGE_INCLUDE;
+}>;
+
+function toBirthdayPackage(row: BirthdayPackageWithRelations): BirthdayPackage {
+  return {
+    id: row.id,
+    slug: row.slug,
+    audience: row.audience as BirthdayAudience,
+    name: row.name,
+    description: row.description,
+    priceFrom: row.priceFromPence / 100,
+    includes: row.includes.map((item) => item.label),
+    ageRange: row.ageRange ?? undefined,
+    themeIds: row.themes.map((theme) => theme.themeId),
+    image: row.image,
+  };
+}
+
+export async function getBirthdayPackages(): Promise<BirthdayPackage[]> {
+  const rows = await getPrismaClient().birthdayPackage.findMany({
+    include: BIRTHDAY_PACKAGE_INCLUDE,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(toBirthdayPackage);
+}
+
+const SEASONAL_COLLECTION_INCLUDE = {
+  products: true,
+} satisfies Prisma.SeasonalCollectionInclude;
+
+type SeasonalCollectionWithRelations = Prisma.SeasonalCollectionGetPayload<{
+  include: typeof SEASONAL_COLLECTION_INCLUDE;
+}>;
+
+function toSeasonalCollection(row: SeasonalCollectionWithRelations): SeasonalCollection {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    startsAt: row.startsAt.toISOString().slice(0, 10),
+    endsAt: row.endsAt.toISOString().slice(0, 10),
+    heroImage: row.heroImage,
+    productIds: row.products.map((product) => product.productId),
+  };
+}
+
+/** Seasonal drops ordered by start date — earliest upcoming/current collection first. */
+export async function getSeasonalCollections(): Promise<SeasonalCollection[]> {
+  const rows = await getPrismaClient().seasonalCollection.findMany({
+    include: SEASONAL_COLLECTION_INCLUDE,
+    orderBy: { startsAt: "asc" },
+  });
+  return rows.map(toSeasonalCollection);
 }

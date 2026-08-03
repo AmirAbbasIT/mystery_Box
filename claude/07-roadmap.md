@@ -31,8 +31,8 @@ so far:
 - **Admin access starts as a shared PIN/passphrase gate**, not per-staff accounts — explicitly
   flagged in [[10-admin-panel]] as something to revisit before Phase 2c (orders/customers) ships,
   since that phase adds real customer PII behind the same gate.
-- Build order: **Phase 2a catalogue content admin ✅ → Phase 2b custom-requests inbox ✅ → catalog
-  completion (Birthday Packages/Seasonal Collections) → Phase 2c orders/customers** (blocked on
+- Build order: **Phase 2a catalogue content admin ✅ (including Birthday Packages/Seasonal
+  Collections) → Phase 2b custom-requests inbox ✅ → Phase 2c orders/customers** (blocked on
   Stripe existing) — see [[10-admin-panel]] for the reasoning.
 - ~~`CustomRequestInput` becomes a real persisted `CustomRequest`~~ **Done** — see [[10-admin-panel]].
 - `PrizePool` odds move from hardcoded mock weights to admin-editable data (Phase 2a) — **done**.

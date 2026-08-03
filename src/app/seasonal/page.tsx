@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { seasonalCollections } from "@/data";
+import { getSeasonalCollections } from "@/lib/catalogue";
 import styles from "./page.module.scss";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Seasonal & Limited Edition",
@@ -14,7 +16,9 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
 });
 
-export default function SeasonalPage() {
+export default async function SeasonalPage() {
+  const seasonalCollections = await getSeasonalCollections();
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>

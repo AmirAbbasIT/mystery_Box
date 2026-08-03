@@ -10,6 +10,8 @@ const NAV_LINKS = [
   { label: "Categories", href: "/admin/categories" },
   { label: "Themes", href: "/admin/themes" },
   { label: "Prize Pools", href: "/admin/prize-pools" },
+  { label: "Birthday Packages", href: "/admin/birthday-packages" },
+  { label: "Seasonal", href: "/admin/seasonal" },
   { label: "Custom Requests", href: "/admin/custom-requests" },
   { label: "Settings", href: "/admin/settings" },
 ];

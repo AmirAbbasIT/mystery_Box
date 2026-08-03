@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { birthdayPackages } from "@/data";
+import { getBirthdayPackages } from "@/lib/catalogue";
 import { Button } from "@/components/ui";
 import { PackageCard } from "../PackageCard";
 import styles from "../page.module.scss";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Adult Party Packages",
   description: "Hen dos, milestone birthdays and build-your-own adult party boxes.",
 };
 
-export default function AdultPartyPage() {
+export default async function AdultPartyPage() {
+  const birthdayPackages = await getBirthdayPackages();
   const adultPackages = birthdayPackages.filter((pkg) => pkg.audience === "adult-party");
 
   return (

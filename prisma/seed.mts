@@ -213,7 +213,159 @@ for (const pool of prizePools) {
   await upsertPrizePool(pool);
 }
 
+interface BirthdayPackageSeed {
+  slug: string;
+  audience: string;
+  name: string;
+  description: string;
+  priceFromPence: number;
+  ageRange: string | null;
+  image: string;
+  includes: string[];
+  themeSlugs: string[];
+}
+
+// Matches src/data/birthday-packages.ts — themeSlugs are resolved to real theme UUIDs at seed
+// time since the mock data references themes by slug. Includes/themes are always delete+recreate
+// on re-run, same pattern as prizePools above.
+async function upsertBirthdayPackage(pkg: BirthdayPackageSeed) {
+  const themeRows = await prisma.theme.findMany({ where: { slug: { in: pkg.themeSlugs } } });
+  const themeIds = themeRows.map((theme) => theme.id);
+
+  const existing = await prisma.birthdayPackage.findUnique({ where: { slug: pkg.slug } });
+  const data = {
+    audience: pkg.audience,
+    name: pkg.name,
+    description: pkg.description,
+    priceFromPence: pkg.priceFromPence,
+    ageRange: pkg.ageRange,
+    image: pkg.image,
+    includes: { create: pkg.includes.map((label, index) => ({ label, sortOrder: index })) },
+    themes: { create: themeIds.map((themeId) => ({ themeId })) },
+  };
+
+  if (existing) {
+    await prisma.birthdayPackageInclude.deleteMany({ where: { birthdayPackageId: existing.id } });
+    await prisma.birthdayPackageTheme.deleteMany({ where: { birthdayPackageId: existing.id } });
+    await prisma.birthdayPackage.update({ where: { id: existing.id }, data });
+  } else {
+    await prisma.birthdayPackage.create({ data: { slug: pkg.slug, ...data } });
+  }
+}
+
+const birthdayPackages: BirthdayPackageSeed[] = [
+  {
+    slug: "kids-birthday-party-box",
+    audience: "kids",
+    name: "Kids Birthday Party Box",
+    description:
+      "Themed party favours sized for the whole party — mini mystery eggs and trinkets, no small choking-hazard parts.",
+    priceFromPence: 350,
+    ageRange: "4-12",
+    image: "/images/products/birthday-kids.svg",
+    includes: [
+      "1 mini mystery egg per guest",
+      "Themed stickers",
+      "Optional party bag packaging",
+      "Choose from any theme",
+    ],
+    themeSlugs: ["unicorn-dreams", "retro-cartoon", "kawaii-pastels"],
+  },
+  {
+    slug: "kids-milestone-birthday-box",
+    audience: "kids",
+    name: "Kids Milestone Birthday Box",
+    description: "A bigger single box for the birthday child — jewellery, stationery and a wheel spin voucher.",
+    priceFromPence: 1800,
+    ageRange: "5-12",
+    image: "/images/products/birthday-kids.svg",
+    includes: ["1 jewellery mystery box", "1 stationery mystery box", "1 wheel spin voucher"],
+    themeSlugs: ["unicorn-dreams", "kawaii-pastels"],
+  },
+  {
+    slug: "adult-party-hen-box",
+    audience: "adult-party",
+    name: "Adult Party / Hen Box",
+    description:
+      "Build-your-own party box — pick the mix of jewellery, beauty and cheeky extras for a hen do or girls' night.",
+    priceFromPence: 1500,
+    ageRange: null,
+    image: "/images/products/birthday-adult.svg",
+    includes: ["Customisable box mix", "Optional luxury upgrade", "Personalised note"],
+    themeSlugs: ["y2k-sparkle", "celestial-stars"],
+  },
+  {
+    slug: "adult-milestone-birthday-box",
+    audience: "adult-party",
+    name: "Adult Milestone Birthday Box",
+    description: "A luxury edit for 18th, 21st, 30th and other milestone birthdays.",
+    priceFromPence: 2500,
+    ageRange: null,
+    image: "/images/products/birthday-adult.svg",
+    includes: ["1 luxury jewellery or beauty box", "1 wheel spin", "Gift wrapping"],
+    themeSlugs: ["celestial-stars", "cottagecore-florals"],
+  },
+];
+
+for (const pkg of birthdayPackages) {
+  await upsertBirthdayPackage(pkg);
+}
+
+interface SeasonalCollectionSeed {
+  slug: string;
+  name: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  heroImage: string;
+}
+
+// Matches src/data/seasonal.ts — productIds are intentionally empty here too, same reasoning as
+// the mock data (real seasonal SKUs get assigned closer to each date via the admin product picker).
+const seasonalCollections: SeasonalCollectionSeed[] = [
+  {
+    slug: "christmas-2026",
+    name: "Christmas 2026",
+    description: "Festive mystery boxes and eggs, wrapped and ready to gift.",
+    startsAt: "2026-11-15",
+    endsAt: "2026-12-24",
+    heroImage: "/images/products/seasonal-christmas.svg",
+  },
+  {
+    slug: "valentines-2027",
+    name: "Valentine's Day 2027",
+    description: "Romantic-themed jewellery and beauty boxes for the one you love — or yourself.",
+    startsAt: "2027-01-26",
+    endsAt: "2027-02-14",
+    heroImage: "/images/products/seasonal-valentines.svg",
+  },
+  {
+    slug: "mothers-day-2027",
+    name: "Mother's Day 2027",
+    description: "Treat-worthy boxes for Mothering Sunday.",
+    startsAt: "2027-02-22",
+    endsAt: "2027-03-14",
+    heroImage: "/images/products/seasonal-mothers-day.svg",
+  },
+  {
+    slug: "easter-2027",
+    name: "Easter 2027",
+    description: "Our pink mystery eggs go fully seasonal, with an Easter-exclusive prize pool.",
+    startsAt: "2027-03-08",
+    endsAt: "2027-03-28",
+    heroImage: "/images/products/seasonal-easter.svg",
+  },
+];
+
+for (const collection of seasonalCollections) {
+  await prisma.seasonalCollection.upsert({
+    where: { slug: collection.slug },
+    update: { ...collection, startsAt: new Date(collection.startsAt), endsAt: new Date(collection.endsAt) },
+    create: { ...collection, startsAt: new Date(collection.startsAt), endsAt: new Date(collection.endsAt) },
+  });
+}
+
 console.log(
-  `Seeded ${categories.length} categories, ${themes.length} themes, and ${prizePools.length} prize pools (1 wheel, 4 egg tiers).`,
+  `Seeded ${categories.length} categories, ${themes.length} themes, ${prizePools.length} prize pools (1 wheel, 4 egg tiers), ${birthdayPackages.length} birthday packages, and ${seasonalCollections.length} seasonal collections.`,
 );
 await prisma.$disconnect();

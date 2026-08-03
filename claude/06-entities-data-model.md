@@ -1,12 +1,11 @@
 # Entities & Data Model
 
 All types live in `src/types/` (one file per entity, barrel-exported from `src/types/index.ts`).
-**Product, Category, and Theme are now live in Postgres** — `src/lib/catalogue.ts` maps DB rows
-onto these exact same types, which is why the swap from `src/data/*.ts` touched zero component
-shapes (see [[02-architecture]]'s Data flow section). PrizePool, PrizeItem, BirthdayPackage, and
-SeasonalCollection are still populated by hand-written mock data in `src/data/` — the types were
-always written to match what a real backend would return, so their transition (whenever it
-happens) will be the same kind of data-fetching-only change.
+**Product, Category, Theme, PrizePool/PrizeItem, BirthdayPackage, and SeasonalCollection are all
+now live in Postgres** — `src/lib/catalogue.ts` maps DB rows onto these exact same types, which is
+why every mock-to-DB swap so far has touched zero component shapes (see [[02-architecture]]'s Data
+flow section). `src/data/*.ts` mock files for these entities are kept in the repo deliberately, not
+imported anywhere at runtime — see [[10-admin-panel]]'s Phase 2a completion note for why.
 
 ## Product (`types/product.ts`, DB-backed via `lib/catalogue.ts`)
 
@@ -52,12 +51,16 @@ changed where the prize *data* comes from, not where the pick happens; there is 
 server-side odds enforcement (see [[07-roadmap]] — that remains a real Phase 2/3 concern, since a
 motivated user could inspect the client-side weights before spinning).
 
-## BirthdayPackage (`types/birthday-package.ts`, `data/birthday-packages.ts`)
+## BirthdayPackage (`types/birthday-package.ts`, DB-backed via `lib/catalogue.ts`)
 
-`audience: "kids" | "adult-party"` splits the two Birthday Packages sub-pages. `includes` is a
-plain string list (not structured line items) — good enough for Phase 1 display, would likely
-become a list of `Product`/`PrizePool` references in Phase 2 if packages need real inventory
-tracking.
+`audience: "kids" | "adult-party"` splits the two Birthday Packages sub-pages. `includes` is
+exposed to the type as a plain string list, but is a real one-to-many table
+(`birthday_package_includes`, ordered) at the DB layer, not a Postgres array column — same
+delete-then-recreate-on-update pattern as `PrizeItem`/`ProductImage`. `themeIds` is a genuine
+many-to-many join (`birthday_package_themes`), admin-editable via a checkbox multi-select in
+`/admin/birthday-packages`, same mechanism as Products' theme picker. Still string labels, not
+`Product`/`PrizePool` references — that remains a possible future step if packages ever need real
+inventory tracking, not something this build added.
 
 ## CustomRequestInput (`types/custom-request.ts`, DB-backed — Phase 2b, live)
 
@@ -72,11 +75,13 @@ write, no admin auth) into the `custom_requests` table, replacing the old client
 `setIsSubmitted(true)` fake confirmation; triaged at `/admin/custom-requests` — see
 [[10-admin-panel]].
 
-## SeasonalCollection (`types/seasonal.ts`, `data/seasonal.ts`)
+## SeasonalCollection (`types/seasonal.ts`, DB-backed via `lib/catalogue.ts`)
 
-Christmas/Valentine's/Mother's Day/Easter drops. `productIds` is intentionally empty in every
-current entry — real seasonal SKUs get added closer to each date. The pages/routing exist ahead of
-stock so the seasonal calendar structure is already in place.
+Christmas/Valentine's/Mother's Day/Easter drops. `productIds` is a real many-to-many join
+(`seasonal_collection_products`), admin-editable via a checkbox multi-select of every product in
+`/admin/seasonal` — still intentionally empty for every seeded collection, since real seasonal SKUs
+get assigned closer to each date, but the picker is fully wired and ready for that. The
+pages/routing exist ahead of stock so the seasonal calendar structure is already in place.
 
 ## Order / OrderItem / Customer (`types/order.ts`, `types/customer.ts`)
 

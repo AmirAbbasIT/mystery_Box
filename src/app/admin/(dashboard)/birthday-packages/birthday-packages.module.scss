@@ -1,0 +1,145 @@
+@use "../../../../styles/abstracts" as *;
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.title {
+  font-family: var(--font-family-display);
+  font-size: rem(24px);
+  color: var(--color-text);
+}
+
+.newLink {
+  @include focus-visible;
+
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-surface-alt);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  th,
+  td {
+    padding: var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  th {
+    font-size: rem(13px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.deleteButton {
+  @include focus-visible;
+
+  background: none;
+  border: none;
+  color: var(--color-error);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 560px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+
+  label {
+    font-weight: 700;
+    font-size: rem(14px);
+    color: var(--color-text);
+  }
+
+  input,
+  select,
+  textarea {
+    @include form-input;
+
+    font-size: rem(15px);
+  }
+}
+
+.row {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-end;
+}
+
+.fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+
+  legend {
+    font-weight: 700;
+    font-size: rem(14px);
+    padding-inline: var(--space-1);
+  }
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: rem(14px);
+  color: var(--color-text);
+}
+
+.error {
+  color: var(--color-error);
+  font-size: rem(14px);
+}
+
+.submit {
+  @include focus-visible;
+  @include touch-target;
+
+  align-self: flex-start;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

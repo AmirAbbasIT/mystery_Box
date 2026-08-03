@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { birthdayPackages } from "@/data";
+import { getBirthdayPackages } from "@/lib/catalogue";
 import { Button } from "@/components/ui";
 import { PackageCard } from "./PackageCard";
 import styles from "./page.module.scss";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Birthday Packages",
@@ -10,7 +12,9 @@ export const metadata: Metadata = {
     "Kids party favours to adult milestone birthday boxes — or request something custom.",
 };
 
-export default function BirthdayPackagesPage() {
+export default async function BirthdayPackagesPage() {
+  const birthdayPackages = await getBirthdayPackages();
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>

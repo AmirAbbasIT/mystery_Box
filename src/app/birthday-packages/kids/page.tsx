@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { birthdayPackages } from "@/data";
+import { getBirthdayPackages } from "@/lib/catalogue";
 import { Button } from "@/components/ui";
 import { PackageCard } from "../PackageCard";
 import styles from "../page.module.scss";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Kids Birthday Packages",
   description: "Party favours and milestone birthday boxes for kids.",
 };
 
-export default function KidsBirthdayPage() {
+export default async function KidsBirthdayPage() {
+  const birthdayPackages = await getBirthdayPackages();
   const kidsPackages = birthdayPackages.filter((pkg) => pkg.audience === "kids");
 
   return (
