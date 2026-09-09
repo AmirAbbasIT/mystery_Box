@@ -9,17 +9,27 @@ import {
   updateProduct,
   type ProductInput,
 } from "@/admin/services/products.service";
+import { Prisma } from "@/generated/prisma/client";
+import { slugify } from "@/lib/utils";
 
 export interface ProductFormState {
   error?: string;
 }
 
+function friendlyError(error: unknown, fallback: string): string {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return "A product with this name already exists — try a slightly different name.";
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 function parseProductInput(formData: FormData): ProductInput {
   const pricePounds = Number(formData.get("price"));
+  const name = String(formData.get("name") ?? "").trim();
 
   return {
-    slug: String(formData.get("slug") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    slug: slugify(name),
+    name,
     description: String(formData.get("description") ?? "").trim(),
     pricePence: Number.isFinite(pricePounds) ? Math.round(pricePounds * 100) : 0,
     categoryId: String(formData.get("categoryId") ?? ""),
@@ -52,13 +62,13 @@ export async function createProductAction(
 
   const input = parseProductInput(formData);
   if (!input.slug || !input.name || !input.categoryId) {
-    return { error: "Slug, name, and category are required." };
+    return { error: "Name and category are required." };
   }
 
   try {
     await createProduct(input);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to create product." };
+    return { error: friendlyError(error, "Failed to create product.") };
   }
 
   revalidatePath("/admin/products");
@@ -74,13 +84,13 @@ export async function updateProductAction(
 
   const input = parseProductInput(formData);
   if (!input.slug || !input.name || !input.categoryId) {
-    return { error: "Slug, name, and category are required." };
+    return { error: "Name and category are required." };
   }
 
   try {
     await updateProduct(id, input);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to update product." };
+    return { error: friendlyError(error, "Failed to update product.") };
   }
 
   revalidatePath("/admin/products");

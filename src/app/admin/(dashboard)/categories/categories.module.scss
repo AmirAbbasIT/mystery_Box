@@ -89,6 +89,11 @@
   }
 }
 
+.slugPreview {
+  font-size: rem(13px);
+  color: var(--color-text-muted);
+}
+
 .error {
   color: var(--color-error);
   font-size: rem(14px);

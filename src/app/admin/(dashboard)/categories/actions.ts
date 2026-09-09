@@ -10,18 +10,27 @@ import {
   type CategoryInput,
 } from "@/admin/services/categories.service";
 import { Prisma } from "@/generated/prisma/client";
+import { slugify } from "@/lib/utils";
 
 export interface CategoryFormState {
   error?: string;
 }
 
 function parseCategoryInput(formData: FormData): CategoryInput {
+  const name = String(formData.get("name") ?? "").trim();
   return {
-    slug: String(formData.get("slug") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    slug: slugify(name),
+    name,
     tagline: String(formData.get("tagline") ?? "").trim(),
     heroImage: String(formData.get("heroImage") ?? "").trim(),
   };
+}
+
+function friendlyError(error: unknown, fallback: string): string {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return "A category with this name already exists — try a slightly different name.";
+  }
+  return error instanceof Error ? error.message : fallback;
 }
 
 export async function createCategoryAction(
@@ -32,13 +41,13 @@ export async function createCategoryAction(
 
   const input = parseCategoryInput(formData);
   if (!input.slug || !input.name || !input.heroImage) {
-    return { error: "Slug, name, and a hero image are required." };
+    return { error: "Name and a hero image are required." };
   }
 
   try {
     await createCategory(input);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to create category." };
+    return { error: friendlyError(error, "Failed to create category.") };
   }
 
   revalidatePath("/admin/categories");
@@ -54,13 +63,13 @@ export async function updateCategoryAction(
 
   const input = parseCategoryInput(formData);
   if (!input.slug || !input.name || !input.heroImage) {
-    return { error: "Slug, name, and a hero image are required." };
+    return { error: "Name and a hero image are required." };
   }
 
   try {
     await updateCategory(id, input);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Failed to update category." };
+    return { error: friendlyError(error, "Failed to update category.") };
   }
 
   revalidatePath("/admin/categories");

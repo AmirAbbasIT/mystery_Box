@@ -10,6 +10,8 @@ import {
   type BirthdayAudience,
   type BirthdayPackageInput,
 } from "@/admin/services/birthday-packages.service";
+import { Prisma } from "@/generated/prisma/client";
+import { slugify } from "@/lib/utils";
 
 export interface BirthdayPackageFormState {
   error?: string;
@@ -20,11 +22,12 @@ function parseBirthdayPackageInput(formData: FormData): BirthdayPackageInput {
     String(formData.get("audience") ?? "kids") === "adult-party" ? "adult-party" : "kids";
   const priceFromPounds = Number(formData.get("priceFrom"));
   const ageRange = String(formData.get("ageRange") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
 
   return {
-    slug: String(formData.get("slug") ?? "").trim(),
+    slug: slugify(name),
     audience,
-    name: String(formData.get("name") ?? "").trim(),
+    name,
     description: String(formData.get("description") ?? "").trim(),
     priceFromPence: Number.isFinite(priceFromPounds) ? Math.round(priceFromPounds * 100) : 0,
     ageRange: ageRange || null,
@@ -39,12 +42,19 @@ function parseBirthdayPackageInput(formData: FormData): BirthdayPackageInput {
 
 function validate(input: BirthdayPackageInput): string | null {
   if (!input.slug || !input.name || !input.image) {
-    return "Slug, name, and an image are required.";
+    return "Name and an image are required.";
   }
   if (input.includes.length === 0) {
     return "Add at least one include line.";
   }
   return null;
+}
+
+function friendlyError(error: unknown, fallback: string): string {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return "A birthday package with this name already exists — try a slightly different name.";
+  }
+  return error instanceof Error ? error.message : fallback;
 }
 
 export async function createBirthdayPackageAction(
@@ -60,7 +70,7 @@ export async function createBirthdayPackageAction(
   try {
     await createBirthdayPackage(input);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to create birthday package." };
+    return { error: friendlyError(err, "Failed to create birthday package.") };
   }
 
   revalidatePath("/admin/birthday-packages");
@@ -82,7 +92,7 @@ export async function updateBirthdayPackageAction(
   try {
     await updateBirthdayPackage(id, input);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to update birthday package." };
+    return { error: friendlyError(err, "Failed to update birthday package.") };
   }
 
   revalidatePath("/admin/birthday-packages");

@@ -6,6 +6,7 @@ import { ImagePicker, type ImagePickerValue } from "@/admin/components/ImagePick
 import { uploadImageAction } from "../upload-image-action";
 import type { ProductFormState } from "./actions";
 import { ProductPreview } from "./ProductPreview";
+import { slugify } from "@/lib/utils";
 import styles from "./products.module.scss";
 
 const AGE_OPTIONS = ["kids", "teens", "adults", "all-ages"];
@@ -56,11 +57,7 @@ export function ProductForm({ categories, themes, product, action, submitLabel }
         <div className={styles.field}>
           <label htmlFor="name">Name</label>
           <input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} required />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="slug">Slug</label>
-          <input id="slug" name="slug" defaultValue={product?.slug} required />
+          <p className={styles.slugPreview}>URL slug: {slugify(name) || "—"}</p>
         </div>
 
         <div className={styles.field}>

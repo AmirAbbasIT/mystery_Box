@@ -5,6 +5,7 @@ import type { ProductOption, SeasonalCollectionRecord } from "@/admin/services/s
 import { ImagePicker, type ImagePickerValue } from "@/admin/components/ImagePicker/ImagePicker";
 import { uploadImageAction } from "../upload-image-action";
 import type { SeasonalCollectionFormState } from "./actions";
+import { slugify } from "@/lib/utils";
 import styles from "./seasonal.module.scss";
 
 const uploadSeasonalImage = uploadImageAction.bind(null, "seasonal");
@@ -30,17 +31,20 @@ export function SeasonalCollectionForm({
     collection?.heroImage ? [{ src: collection.heroImage, alt: "" }] : [],
   );
   const [productIds, setProductIds] = useState<string[]>(collection?.productIds ?? []);
+  const [slugPreview, setSlugPreview] = useState(collection?.slug ?? "");
 
   return (
     <form action={formAction} className={styles.form}>
       <div className={styles.field}>
         <label htmlFor="name">Name</label>
-        <input id="name" name="name" defaultValue={collection?.name} required />
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="slug">Slug</label>
-        <input id="slug" name="slug" defaultValue={collection?.slug} required />
+        <input
+          id="name"
+          name="name"
+          defaultValue={collection?.name}
+          onChange={(e) => setSlugPreview(slugify(e.target.value))}
+          required
+        />
+        <p className={styles.slugPreview}>URL slug: {slugPreview || "—"}</p>
       </div>
 
       <div className={styles.field}>

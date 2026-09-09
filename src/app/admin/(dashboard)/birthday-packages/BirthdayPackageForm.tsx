@@ -6,6 +6,7 @@ import type { BirthdayPackageRecord } from "@/admin/services/birthday-packages.s
 import { ImagePicker, type ImagePickerValue } from "@/admin/components/ImagePicker/ImagePicker";
 import { uploadImageAction } from "../upload-image-action";
 import type { BirthdayPackageFormState } from "./actions";
+import { slugify } from "@/lib/utils";
 import styles from "./birthday-packages.module.scss";
 
 const uploadBirthdayPackageImage = uploadImageAction.bind(null, "birthday-packages");
@@ -23,17 +24,20 @@ export function BirthdayPackageForm({ themes, pkg, action, submitLabel }: Birthd
     pkg?.image ? [{ src: pkg.image, alt: "" }] : [],
   );
   const [themeIds, setThemeIds] = useState<string[]>(pkg?.themeIds ?? []);
+  const [slugPreview, setSlugPreview] = useState(pkg?.slug ?? "");
 
   return (
     <form action={formAction} className={styles.form}>
       <div className={styles.field}>
         <label htmlFor="name">Name</label>
-        <input id="name" name="name" defaultValue={pkg?.name} required />
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="slug">Slug</label>
-        <input id="slug" name="slug" defaultValue={pkg?.slug} required />
+        <input
+          id="name"
+          name="name"
+          defaultValue={pkg?.name}
+          onChange={(e) => setSlugPreview(slugify(e.target.value))}
+          required
+        />
+        <p className={styles.slugPreview}>URL slug: {slugPreview || "—"}</p>
       </div>
 
       <div className={styles.field}>

@@ -10,6 +10,8 @@ import {
   type PrizePoolInput,
   type PrizeItemInput,
 } from "@/admin/services/prize-pools.service";
+import { Prisma } from "@/generated/prisma/client";
+import { slugify } from "@/lib/utils";
 
 export interface PrizePoolFormState {
   error?: string;
@@ -36,9 +38,11 @@ function parsePrizePoolInput(formData: FormData): PrizePoolInput {
     prizeItems = [];
   }
 
+  const name = String(formData.get("name") ?? "").trim();
+
   return {
-    slug: String(formData.get("slug") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    slug: slugify(name),
+    name,
     kind,
     quantity: kind === "egg" && quantityRaw ? Number(quantityRaw) : null,
     pricePence: Number.isFinite(pricePounds) ? Math.round(pricePounds * 100) : 0,
@@ -49,7 +53,7 @@ function parsePrizePoolInput(formData: FormData): PrizePoolInput {
 
 function validate(input: PrizePoolInput): string | null {
   if (!input.slug || !input.name || !input.image) {
-    return "Slug, name, and an image are required.";
+    return "Name and an image are required.";
   }
   if (input.prizeItems.length === 0) {
     return "Add at least one prize.";
@@ -58,6 +62,13 @@ function validate(input: PrizePoolInput): string | null {
     return "Every prize needs a label and a weight greater than 0.";
   }
   return null;
+}
+
+function friendlyError(error: unknown, fallback: string): string {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return "A prize pool with this name already exists — try a slightly different name.";
+  }
+  return error instanceof Error ? error.message : fallback;
 }
 
 export async function createPrizePoolAction(
@@ -73,7 +84,7 @@ export async function createPrizePoolAction(
   try {
     await createPrizePool(input);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to create prize pool." };
+    return { error: friendlyError(err, "Failed to create prize pool.") };
   }
 
   revalidatePath("/admin/prize-pools");
@@ -94,7 +105,7 @@ export async function updatePrizePoolAction(
   try {
     await updatePrizePool(id, input);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to update prize pool." };
+    return { error: friendlyError(err, "Failed to update prize pool.") };
   }
 
   revalidatePath("/admin/prize-pools");

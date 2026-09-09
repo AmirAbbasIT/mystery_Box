@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import type { ThemeRecord } from "@/admin/services/themes.service";
 import type { ThemeFormState } from "./actions";
+import { slugify } from "@/lib/utils";
 import styles from "./themes.module.scss";
 
 interface ThemeFormProps {
@@ -28,11 +29,7 @@ export function ThemeForm({ theme, action, submitLabel }: ThemeFormProps) {
         <div className={styles.field}>
           <label htmlFor="name">Name</label>
           <input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} required />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="slug">Slug</label>
-          <input id="slug" name="slug" defaultValue={theme?.slug} required />
+          <p className={styles.slugPreview}>URL slug: {slugify(name) || "—"}</p>
         </div>
 
         <div className={styles.field}>

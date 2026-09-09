@@ -99,6 +99,11 @@
   }
 }
 
+.slugPreview {
+  font-size: rem(13px);
+  color: var(--color-text-muted);
+}
+
 .row {
   display: flex;
   gap: var(--space-4);

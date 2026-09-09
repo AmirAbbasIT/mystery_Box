@@ -7,6 +7,7 @@ import type { PrizePoolRecord, PrizePoolKind, PrizeRarity } from "@/admin/servic
 import { WheelSpinLoader } from "@/components/animations";
 import type { PrizeItem } from "@/types";
 import type { PrizePoolFormState } from "./actions";
+import { slugify } from "@/lib/utils";
 import styles from "./prize-pools.module.scss";
 
 const uploadPrizePoolImage = uploadImageAction.bind(null, "prize-pools");
@@ -44,6 +45,7 @@ export function PrizePoolForm({ prizePool, action, submitLabel }: PrizePoolFormP
   const [prizeItems, setPrizeItems] = useState<EditablePrizeItem[]>(
     prizePool ? toEditable(prizePool.prizeItems) : [],
   );
+  const [slugPreview, setSlugPreview] = useState(prizePool?.slug ?? "");
 
   const totalWeight = prizeItems.reduce((sum, item) => sum + (Number(item.weight) || 0), 0);
 
@@ -88,12 +90,14 @@ export function PrizePoolForm({ prizePool, action, submitLabel }: PrizePoolFormP
       <form action={formAction} className={styles.form}>
         <div className={styles.field}>
           <label htmlFor="name">Name</label>
-          <input id="name" name="name" defaultValue={prizePool?.name} required />
-        </div>
-
-        <div className={styles.field}>
-          <label htmlFor="slug">Slug</label>
-          <input id="slug" name="slug" defaultValue={prizePool?.slug} required />
+          <input
+            id="name"
+            name="name"
+            defaultValue={prizePool?.name}
+            onChange={(e) => setSlugPreview(slugify(e.target.value))}
+            required
+          />
+          <p className={styles.slugPreview}>URL slug: {slugPreview || "—"}</p>
         </div>
 
         <div className={styles.row}>

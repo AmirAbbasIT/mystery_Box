@@ -9,6 +9,14 @@ export function cx(...classes: Array<string | false | null | undefined>): string
   return classes.filter(Boolean).join(" ");
 }
 
+/** Derives a URL-safe slug from a name, e.g. "Birthday Party!" -> "birthday-party". */
+export function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /** Weighted-random pick — used by WheelSpin/EggReveal to select a prize. */
 export function pickWeighted<T extends { weight: number }>(items: T[]): T {
   const total = items.reduce((sum, item) => sum + item.weight, 0);

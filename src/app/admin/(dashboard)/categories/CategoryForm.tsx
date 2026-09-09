@@ -5,6 +5,7 @@ import type { CategoryRecord } from "@/admin/services/categories.service";
 import { ImagePicker, type ImagePickerValue } from "@/admin/components/ImagePicker/ImagePicker";
 import { uploadImageAction } from "../upload-image-action";
 import type { CategoryFormState } from "./actions";
+import { slugify } from "@/lib/utils";
 import styles from "./categories.module.scss";
 
 const uploadCategoryImage = uploadImageAction.bind(null, "categories");
@@ -20,17 +21,20 @@ export function CategoryForm({ category, action, submitLabel }: CategoryFormProp
   const [heroImage, setHeroImage] = useState<ImagePickerValue[]>(
     category?.heroImage ? [{ src: category.heroImage, alt: "" }] : [],
   );
+  const [slugPreview, setSlugPreview] = useState(category?.slug ?? "");
 
   return (
     <form action={formAction} className={styles.form}>
       <div className={styles.field}>
         <label htmlFor="name">Name</label>
-        <input id="name" name="name" defaultValue={category?.name} required />
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="slug">Slug</label>
-        <input id="slug" name="slug" defaultValue={category?.slug} required />
+        <input
+          id="name"
+          name="name"
+          defaultValue={category?.name}
+          onChange={(e) => setSlugPreview(slugify(e.target.value))}
+          required
+        />
+        <p className={styles.slugPreview}>URL slug: {slugPreview || "—"}</p>
       </div>
 
       <div className={styles.field}>

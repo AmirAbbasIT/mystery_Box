@@ -9,15 +9,18 @@ import {
   updateSeasonalCollection,
   type SeasonalCollectionInput,
 } from "@/admin/services/seasonal-collections.service";
+import { Prisma } from "@/generated/prisma/client";
+import { slugify } from "@/lib/utils";
 
 export interface SeasonalCollectionFormState {
   error?: string;
 }
 
 function parseSeasonalCollectionInput(formData: FormData): SeasonalCollectionInput {
+  const name = String(formData.get("name") ?? "").trim();
   return {
-    slug: String(formData.get("slug") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    slug: slugify(name),
+    name,
     description: String(formData.get("description") ?? "").trim(),
     startsAt: String(formData.get("startsAt") ?? "").trim(),
     endsAt: String(formData.get("endsAt") ?? "").trim(),
@@ -28,7 +31,7 @@ function parseSeasonalCollectionInput(formData: FormData): SeasonalCollectionInp
 
 function validate(input: SeasonalCollectionInput): string | null {
   if (!input.slug || !input.name || !input.heroImage) {
-    return "Slug, name, and a hero image are required.";
+    return "Name and a hero image are required.";
   }
   if (!input.startsAt || !input.endsAt) {
     return "Start and end dates are required.";
@@ -37,6 +40,13 @@ function validate(input: SeasonalCollectionInput): string | null {
     return "Start date must be before the end date.";
   }
   return null;
+}
+
+function friendlyError(error: unknown, fallback: string): string {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    return "A seasonal collection with this name already exists — try a slightly different name.";
+  }
+  return error instanceof Error ? error.message : fallback;
 }
 
 export async function createSeasonalCollectionAction(
@@ -52,7 +62,7 @@ export async function createSeasonalCollectionAction(
   try {
     await createSeasonalCollection(input);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to create collection." };
+    return { error: friendlyError(err, "Failed to create collection.") };
   }
 
   revalidatePath("/admin/seasonal");
@@ -74,7 +84,7 @@ export async function updateSeasonalCollectionAction(
   try {
     await updateSeasonalCollection(id, input);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : "Failed to update collection." };
+    return { error: friendlyError(err, "Failed to update collection.") };
   }
 
   revalidatePath("/admin/seasonal");
