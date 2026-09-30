@@ -128,6 +128,14 @@ export interface PayPalOrder {
     email_address?: string;
     name?: { given_name?: string; surname?: string };
   };
+  payment_source?: {
+    card?: {
+      authentication_result?: {
+        liability_shift?: "POSSIBLE" | "YES" | "NO" | "UNKNOWN";
+        three_d_secure?: { enrollment_status?: string; authentication_status?: string };
+      };
+    };
+  };
   purchase_units?: Array<{
     amount: PayPalMoney;
     shipping?: {
@@ -157,6 +165,8 @@ export interface CreatePayPalOrderInput {
     city: string;
     postcode: string;
   };
+  /** "card" = our Card Fields form; "paypal" = the PayPal / Pay Later buttons. */
+  paymentSource: "paypal" | "card";
   requestId: string;
 }
 
@@ -184,12 +194,22 @@ export async function createPayPalOrder(
     requestId: input.requestId,
     body: JSON.stringify({
       intent: "CAPTURE",
-      // SET_PROVIDED_ADDRESS: PayPal shows the address entered on /checkout and doesn't let the
-      // buyer switch it, so what we recorded is where the parcel actually goes.
-      application_context: {
-        brand_name: SITE_NAME,
-        shipping_preference: "SET_PROVIDED_ADDRESS",
-      },
+      ...(input.paymentSource === "card"
+        ? {
+            // 3-D Secure whenever the issuer/SCA rules require it (always for most UK cards).
+            // The result is enforced server-side before capture — see src/lib/orders.ts.
+            payment_source: {
+              card: { attributes: { verification: { method: "SCA_WHEN_REQUIRED" } } },
+            },
+          }
+        : {
+            // SET_PROVIDED_ADDRESS: PayPal shows the address entered on /checkout and doesn't
+            // let the buyer switch it, so what we recorded is where the parcel actually goes.
+            application_context: {
+              brand_name: SITE_NAME,
+              shipping_preference: "SET_PROVIDED_ADDRESS",
+            },
+          }),
       purchase_units: [
         {
           amount: {

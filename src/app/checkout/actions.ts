@@ -18,7 +18,12 @@ import {
 export async function createPayPalOrderAction(
   basket: unknown,
   customerDetails: unknown,
+  paymentSource: unknown,
 ): Promise<CheckoutResult<{ paypalOrderId: string }>> {
+  if (paymentSource !== "paypal" && paymentSource !== "card") {
+    return { ok: false, error: "Unsupported payment method." };
+  }
+
   const quantities = parseBasketRequest(basket);
   if (!quantities) {
     return {
@@ -36,7 +41,7 @@ export async function createPayPalOrderAction(
   }
 
   try {
-    return await startPayPalCheckout(quantities, validated.details);
+    return await startPayPalCheckout(quantities, validated.details, paymentSource);
   } catch (error) {
     console.error("PayPal order creation failed", error);
     return { ok: false, error: "We couldn't start PayPal checkout — please try again." };

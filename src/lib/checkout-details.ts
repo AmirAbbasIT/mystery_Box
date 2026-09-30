@@ -81,3 +81,56 @@ export function validateCheckoutDetails(input: unknown): CheckoutDetailsResult {
     },
   };
 }
+
+/**
+ * Card billing address — only needed for card payments (the issuer checks it against the card),
+ * so it's handed straight to PayPal's Card Fields in the browser and never stored by us. UK only
+ * for now, matching delivery.
+ */
+export interface BillingAddress {
+  line1: string;
+  line2: string | null;
+  city: string;
+  postcode: string;
+}
+
+export type BillingField =
+  "billingLine1" | "billingLine2" | "billingCity" | "billingPostcode";
+
+export type BillingAddressResult =
+  | { ok: true; billing: BillingAddress }
+  | { ok: false; errors: Partial<Record<BillingField, string>> };
+
+export function validateBillingAddress(input: unknown): BillingAddressResult {
+  const raw = (typeof input === "object" && input !== null ? input : {}) as Record<
+    string,
+    unknown
+  >;
+  const errors: Partial<Record<BillingField, string>> = {};
+
+  const line1 = clean(raw.billingLine1, 100);
+  if (line1.length < 2)
+    errors.billingLine1 = "Enter the first line of the billing address.";
+
+  const line2 = clean(raw.billingLine2, 100);
+
+  const city = clean(raw.billingCity, 60);
+  if (city.length < 2) errors.billingCity = "Enter the billing town or city.";
+
+  const postcodeMatch = UK_POSTCODE_PATTERN.exec(
+    clean(raw.billingPostcode, 10).toUpperCase(),
+  );
+  if (!postcodeMatch) errors.billingPostcode = "Enter a valid UK postcode.";
+
+  if (Object.keys(errors).length > 0 || !postcodeMatch) return { ok: false, errors };
+
+  return {
+    ok: true,
+    billing: {
+      line1,
+      line2: line2 || null,
+      city,
+      postcode: `${postcodeMatch[1]} ${postcodeMatch[2]}`,
+    },
+  };
+}

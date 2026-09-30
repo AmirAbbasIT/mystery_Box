@@ -6,7 +6,10 @@ import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart/CartContext";
 import { calculateShippingPence, type ShippingSettings } from "@/lib/shipping";
 import {
+  validateBillingAddress,
   validateCheckoutDetails,
+  type BillingAddress,
+  type BillingField,
   type CheckoutDetails,
   type CheckoutField,
 } from "@/lib/checkout-details";
@@ -18,10 +21,10 @@ interface CheckoutViewProps {
   shipping: ShippingSettings;
 }
 
-type FieldErrors = Partial<Record<CheckoutField, string>>;
+type FieldErrors = Partial<Record<CheckoutField | BillingField, string>>;
 
 interface FieldProps {
-  name: CheckoutField;
+  name: CheckoutField | BillingField;
   label: string;
   errors: FieldErrors;
   defaultValue?: string | null;
@@ -79,6 +82,9 @@ function Field({
 export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
   const { items, isReady, subtotal } = useCart();
   const [details, setDetails] = useState<CheckoutDetails | null>(null);
+  /** Null = same as the delivery address. */
+  const [billing, setBilling] = useState<BillingAddress | null>(null);
+  const [billingSameAsDelivery, setBillingSameAsDelivery] = useState(true);
   const [step, setStep] = useState<"details" | "review">("details");
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -98,17 +104,25 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = validateCheckoutDetails(
-      Object.fromEntries(new FormData(event.currentTarget)),
-    );
-    if (!result.ok) {
-      setErrors(result.errors);
-      const firstInvalid = Object.keys(result.errors)[0];
+    const formValues = Object.fromEntries(new FormData(event.currentTarget));
+    const result = validateCheckoutDetails(formValues);
+    const billingResult = billingSameAsDelivery
+      ? null
+      : validateBillingAddress(formValues);
+
+    const nextErrors: FieldErrors = {
+      ...(result.ok ? {} : result.errors),
+      ...(billingResult && !billingResult.ok ? billingResult.errors : {}),
+    };
+    if (!result.ok || (billingResult && !billingResult.ok)) {
+      setErrors(nextErrors);
+      const firstInvalid = Object.keys(nextErrors)[0];
       if (firstInvalid) document.getElementById(firstInvalid)?.focus();
       return;
     }
     setErrors({});
     setDetails(result.details);
+    setBilling(billingResult?.ok ? billingResult.billing : null);
     setStep("review");
     window.scrollTo({ top: 0 });
   };
@@ -145,6 +159,13 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
   );
 
   if (step === "review" && details) {
+    const billingAddress: BillingAddress = billing ?? {
+      line1: details.line1,
+      line2: details.line2,
+      city: details.city,
+      postcode: details.postcode,
+    };
+
     return (
       <div className={styles.layout}>
         <div className={styles.review}>
@@ -167,6 +188,21 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
               <span>{details.postcode}</span>
               <span>United Kingdom</span>
             </address>
+          </section>
+
+          <section className={styles.section}>
+            <h2>Billing address</h2>
+            {billing ? (
+              <address className={styles.reviewBlock}>
+                <span>{billing.line1}</span>
+                {billing.line2 && <span>{billing.line2}</span>}
+                <span>{billing.city}</span>
+                <span>{billing.postcode}</span>
+                <span>United Kingdom</span>
+              </address>
+            ) : (
+              <p>Same as delivery address</p>
+            )}
             <button
               type="button"
               className={styles.editButton}
@@ -183,7 +219,13 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
               details.
             </p>
             {paypalClientId ? (
-              <PayPalCheckout clientId={paypalClientId} items={items} details={details} />
+              <PayPalCheckout
+                clientId={paypalClientId}
+                items={items}
+                details={details}
+                billing={billingAddress}
+                totalLabel={formatPrice(subtotal + shippingPence / 100)}
+              />
             ) : (
               <p className={styles.error} role="alert">
                 Checkout is temporarily unavailable — please try again later.
@@ -273,6 +315,56 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
               defaultValue={details?.postcode}
             />
           </div>
+        </fieldset>
+
+        <fieldset className={styles.section}>
+          <legend>Billing address</legend>
+          <label className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={billingSameAsDelivery}
+              onChange={(event) => setBillingSameAsDelivery(event.target.checked)}
+            />
+            Same as delivery address
+          </label>
+          {!billingSameAsDelivery && (
+            <>
+              <p className={styles.hint}>
+                The address your card is registered to (UK only).
+              </p>
+              <Field
+                name="billingLine1"
+                label="Address line 1"
+                autoComplete="billing address-line1"
+                errors={errors}
+                defaultValue={billing?.line1}
+              />
+              <Field
+                name="billingLine2"
+                label="Address line 2"
+                autoComplete="billing address-line2"
+                required={false}
+                errors={errors}
+                defaultValue={billing?.line2}
+              />
+              <div className={styles.fieldRow}>
+                <Field
+                  name="billingCity"
+                  label="Town or city"
+                  autoComplete="billing address-level2"
+                  errors={errors}
+                  defaultValue={billing?.city}
+                />
+                <Field
+                  name="billingPostcode"
+                  label="Postcode"
+                  autoComplete="billing postal-code"
+                  errors={errors}
+                  defaultValue={billing?.postcode}
+                />
+              </div>
+            </>
+          )}
         </fieldset>
 
         <Button type="submit" size="lg">

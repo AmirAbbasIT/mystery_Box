@@ -301,6 +301,16 @@ pattern):
 `PAYPAL_ENVIRONMENT` (`sandbox`/`live`) and `PAYPAL_WEBHOOK_ID` — see `.env.local.example`. Sandbox
 credentials + sandbox buyer accounts exercise the whole flow before going live.
 
+**Card payments without re-entering details:** step 1 also has a "billing same as delivery" tickbox
+(+ billing form if unticked — `validateBillingAddress`, client-only, never stored). If the PayPal
+account is eligible for Advanced card payments, the review step renders **Card Fields**
+(number/expiry/CVV only) and passes our billing address via `cardFields.submit()`, plus standalone
+PayPal/Pay Later buttons; card orders are created with `payment_source.card` and
+`SCA_WHEN_REQUIRED`, and `completePayPalCheckout()` refuses to capture unless 3-D Secure
+`liability_shift` is `POSSIBLE`/`YES` (or 3-D Secure wasn't required). If not eligible it falls back
+to the standard smart buttons, whose card option collects billing itself. Live accounts must be
+approved for "Advanced Credit and Debit Card Payments" by PayPal.
+
 **Security headers** (`next.config.ts`): site-wide CSP limiting script/frame/connect origins to self
 + PayPal, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`.
 

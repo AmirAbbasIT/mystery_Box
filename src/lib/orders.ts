@@ -59,6 +59,7 @@ export function parseBasketRequest(input: unknown): Map<string, number> | null {
 export async function startPayPalCheckout(
   quantities: Map<string, number>,
   details: CheckoutDetails,
+  paymentSource: "paypal" | "card",
 ): Promise<CheckoutResult<{ paypalOrderId: string }>> {
   const prisma = getPrismaClient();
   const products = await prisma.product.findMany({
@@ -118,6 +119,7 @@ export async function startPayPalCheckout(
       city: details.city,
       postcode: details.postcode,
     },
+    paymentSource,
     requestId,
   });
 
@@ -198,6 +200,22 @@ export async function completePayPalCheckout(
   }
 
   if (paypalOrder.status === "APPROVED") {
+    // Card payments: PayPal's 3-D Secure guidance — capture only if liability may shift to the
+    // issuer (POSSIBLE/YES). NO or UNKNOWN means verification failed or couldn't run, so don't
+    // charge. No authentication_result = 3-D Secure wasn't required for this card.
+    const authentication = paypalOrder.payment_source?.card?.authentication_result;
+    if (
+      authentication &&
+      authentication.liability_shift !== "POSSIBLE" &&
+      authentication.liability_shift !== "YES"
+    ) {
+      return {
+        ok: false,
+        error:
+          "Your bank couldn't verify this card. You have not been charged — please try again or use another card.",
+      };
+    }
+
     const products = await prisma.product.findMany({
       where: { id: { in: items.map((item) => item.productId) } },
     });
