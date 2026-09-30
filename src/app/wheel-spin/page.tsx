@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!wheelPool) return { title: "Wheel Spin" };
   return {
     title: wheelPool.name,
-    description: "Spin the Luxury Wheel for a guaranteed prize — see the full odds before you play.",
+    description: "Spin the wheel for a prize — see every prize and its odds up front.",
   };
 }
 
@@ -37,8 +37,8 @@ export default async function WheelSpinPage() {
       <header className={styles.header}>
         <h1>{wheelPool.name}</h1>
         <p>
-          Try a preview spin below — no purchase needed. Every real order gets its own genuine
-          surprise, randomised to these exact published odds.
+          Try a free preview spin below — it&rsquo;s just for fun and uses the odds listed
+          underneath.
         </p>
         <PriceTag price={wheelPool.price} />
       </header>

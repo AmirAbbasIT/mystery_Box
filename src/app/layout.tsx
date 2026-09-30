@@ -23,11 +23,11 @@ const bodyFont = Nunito_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Mystery Packed Gifts | Surprise Jewellery, Beauty & Wheel Spin Gifts",
+    default: "Mystery Packed Gifts | Mystery Gift Boxes for Every Occasion",
     template: "%s | Mystery Packed Gifts",
   },
   description:
-    "UK mystery boxes, pink eggs and wheel spin prizes for jewellery, makeup & beauty and stationery lovers. Plus birthday packages and custom gift requests.",
+    "UK mystery gift boxes for birthdays, weddings, Halloween, Christmas and Valentine's — plus mystery eggs, wheel spins, birthday packages and custom gift requests.",
 };
 
 export default async function RootLayout({

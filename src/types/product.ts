@@ -1,5 +1,3 @@
-import type { CategorySlug } from "./category";
-
 export type AgeSuitability = "kids" | "teens" | "adults" | "all-ages";
 
 export interface ProductImage {
@@ -14,7 +12,8 @@ export interface Product {
   description: string;
   /** GBP, e.g. 10 = £10.00 */
   price: number;
-  category: CategorySlug;
+  /** Category slug. */
+  category: string;
   themeIds: string[];
   images: ProductImage[];
   ageSuitability: AgeSuitability[];

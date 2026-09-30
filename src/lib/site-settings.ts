@@ -1,5 +1,6 @@
 import { getPrismaClient } from "@/lib/db/client";
 import { DEFAULT_COLOR_PALETTE_ID } from "@/lib/color-palettes";
+import type { ShippingSettings } from "@/lib/shipping";
 
 /**
  * Storefront-facing read — separate from src/admin/services/site-settings.service.ts's
@@ -15,4 +16,17 @@ export async function getActiveColorPaletteId(): Promise<string> {
   } catch {
     return DEFAULT_COLOR_PALETTE_ID;
   }
+}
+
+/**
+ * Admin-configured shipping rule. Unlike the palette this throws on a DB error rather than falling
+ * back — silently charging £0 shipping because of a transient failure would be a real money bug.
+ * A missing row just means nothing has been configured yet: free shipping, same as the defaults.
+ */
+export async function getShippingSettings(): Promise<ShippingSettings> {
+  const settings = await getPrismaClient().siteSettings.findFirst();
+  return {
+    flatPence: settings?.shippingFlatPence ?? 0,
+    freeThresholdPence: settings?.freeShippingThresholdPence ?? null,
+  };
 }

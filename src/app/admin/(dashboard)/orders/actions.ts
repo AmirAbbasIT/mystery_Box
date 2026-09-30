@@ -3,13 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/admin/auth/dal";
 import { updateOrderStatus } from "@/admin/services/orders.service";
-import type { OrderStatus } from "@/types/order";
+import { STAFF_ORDER_STATUSES, type OrderStatus } from "@/types/order";
 
 export interface OrderStatusFormState {
   error?: string;
 }
-
-const VALID_STATUSES: OrderStatus[] = ["paid", "fulfilled", "cancelled"];
 
 export async function updateOrderStatusAction(
   id: string,
@@ -19,7 +17,7 @@ export async function updateOrderStatusAction(
   await requireAdmin();
 
   const status = String(formData.get("status") ?? "");
-  if (!VALID_STATUSES.includes(status as OrderStatus)) {
+  if (!STAFF_ORDER_STATUSES.includes(status as OrderStatus)) {
     return { error: "Invalid status." };
   }
 

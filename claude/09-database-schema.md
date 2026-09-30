@@ -79,16 +79,20 @@ Notes:
 - `Category.priceFrom` isn't stored — it's `min(products.price_pence)` for that category, computed
   at query time (or cached/materialized later if it shows up as a real perf cost, not before).
 
-### Orders & customers (live — Phase 2c, guest checkout via Stripe Checkout)
+### Orders & customers (live — Phase 2c, guest checkout via PayPal)
 
 ```
 customers    (id, email unique, name, created_at)
-orders       (id, customer_id fk→customers, status text check in ('paid','fulfilled','cancelled')
-             default 'paid', total_pence int, stripe_checkout_session_id unique,
+orders       (id, customer_id fk→customers, status text ('payment_pending','paid','fulfilled',
+             'cancelled','refunded') default 'paid', total_pence int (incl. shipping),
+             shipping_pence int, paypal_order_id unique, paypal_capture_id unique null,
              shipping_name, shipping_line1, shipping_line2 null, shipping_city,
              shipping_postcode, shipping_country default 'GB', created_at, updated_at)
 order_items  (id, order_id fk→orders (cascade), product_id fk→products null (set null on delete),
              product_name, unit_price_pence int, quantity int)
+pending_checkouts (id, paypal_order_id unique, items jsonb, subtotal_pence, shipping_pence,
+             total_pence, created_at) — server snapshot per PayPal order, checked at capture
+site_settings  += shipping_flat_pence int default 0, free_shipping_threshold_pence int null
 ```
 
 Key decisions, made explicitly (see [[10-admin-panel]]'s Phase 2c section for the fuller
@@ -96,15 +100,12 @@ walkthrough):
 - **Guest checkout only — no customer accounts/login.** `customers` exists purely so admin can look
   someone up by email and see their order history; it's populated by an `upsert(where: {email})`,
   never by a signup flow.
-- **An `orders` row only ever gets created by the Stripe `checkout.session.completed` webhook**
-  (`src/app/api/webhooks/stripe/route.ts` → `src/lib/orders.ts`'s `fulfillCheckoutSession()`), never
-  optimistically when the customer clicks "proceed to checkout." A row existing here always means
-  Stripe actually confirmed payment — that's also why `status` defaults to `'paid'`, not `'pending'`:
-  nothing in this build ever writes a not-yet-paid order.
-- `stripe_checkout_session_id` is `unique` specifically for webhook idempotency — Stripe delivers
-  webhooks at-least-once, so the handler checks for an existing row with that session ID first and
-  no-ops on a duplicate delivery, rather than double-charging inventory or creating two orders for
-  one payment.
+- **An `orders` row only ever gets created after PayPal captures the payment**
+  (`src/lib/orders.ts`'s `completePayPalCheckout()`, from the browser's `onApprove` or the
+  `CHECKOUT.ORDER.APPROVED` webhook), never optimistically. The only not-yet-paid state is
+  `payment_pending` — PayPal accepted the capture but is still settling it.
+- `paypal_order_id` is `unique` so the browser capture and the webhook can race safely: the loser
+  hits the unique constraint and returns the winner's order, never two orders for one payment.
 - `order_items.product_id` is **nullable with `onDelete: SetNull`**, deliberately unlike every other
   child-table FK in this schema (which cascade). `product_name`/`unit_price_pence` are captured at
   order time, not read live from `products` at display time — prices change and products get
@@ -166,7 +167,7 @@ script is close to a direct transform: iterate each mock array, insert one row p
 seed`, since the generated Prisma client is TS source — see [[10-admin-panel]]) now seeds
 Categories, Themes, Prize Pools, Birthday Packages, and Seasonal Collections this way. Products
 aren't seeded (real inventory is admin-entered, not mock-derived) and orders/customers can't be
-seeded this way at all — they're only ever created by a real Stripe webhook firing, not a
+seeded this way at all — they're only ever created by a real PayPal capture, not a
 `create()` call, so there's nothing meaningful to mirror from mock data for them.
 
 ## Firestore mapping notes (if Firebase is chosen instead)

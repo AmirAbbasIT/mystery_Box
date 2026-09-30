@@ -1,6 +1,7 @@
 import "server-only";
 import { getPrismaClient } from "@/lib/db/client";
 import { DEFAULT_COLOR_PALETTE_ID, isValidColorPaletteId } from "@/lib/color-palettes";
+import type { ShippingSettings } from "@/lib/shipping";
 
 /**
  * SiteSettings is a singleton — exactly one row. getOrCreate() below is the only way any code
@@ -18,6 +19,25 @@ async function getOrCreateSettings() {
 export async function getActiveColorPalette(): Promise<string> {
   const settings = await getOrCreateSettings();
   return settings.activeColorPalette;
+}
+
+export async function getShippingSettingsForAdmin(): Promise<ShippingSettings> {
+  const settings = await getOrCreateSettings();
+  return {
+    flatPence: settings.shippingFlatPence,
+    freeThresholdPence: settings.freeShippingThresholdPence,
+  };
+}
+
+export async function setShippingSettings(input: ShippingSettings): Promise<void> {
+  const settings = await getOrCreateSettings();
+  await getPrismaClient().siteSettings.update({
+    where: { id: settings.id },
+    data: {
+      shippingFlatPence: input.flatPence,
+      freeShippingThresholdPence: input.freeThresholdPence,
+    },
+  });
 }
 
 export async function setActiveColorPalette(paletteId: string): Promise<void> {

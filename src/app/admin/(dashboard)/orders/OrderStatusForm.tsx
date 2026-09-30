@@ -1,11 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import type { OrderStatus } from "@/types/order";
+import { STAFF_ORDER_STATUSES, type OrderStatus } from "@/types/order";
 import { updateOrderStatusAction, type OrderStatusFormState } from "./actions";
 import styles from "./orders.module.scss";
-
-const STATUSES: OrderStatus[] = ["paid", "fulfilled", "cancelled"];
 
 interface OrderStatusFormProps {
   orderId: string;
@@ -21,7 +19,12 @@ export function OrderStatusForm({ orderId, currentStatus }: OrderStatusFormProps
       <div className={styles.field}>
         <label htmlFor="status">Status</label>
         <select id="status" name="status" defaultValue={currentStatus}>
-          {STATUSES.map((status) => (
+          {!STAFF_ORDER_STATUSES.includes(currentStatus) && (
+            <option value={currentStatus} disabled>
+              {currentStatus}
+            </option>
+          )}
+          {STAFF_ORDER_STATUSES.map((status) => (
             <option key={status} value={status}>
               {status}
             </option>

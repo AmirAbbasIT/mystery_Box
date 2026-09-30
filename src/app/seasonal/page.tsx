@@ -7,7 +7,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Seasonal & Limited Edition",
-  description: "Christmas, Valentine's, Mother's Day and Easter mystery box drops.",
+  description: "Seasonal and occasion mystery box collections — Halloween, Christmas, Valentine's and more.",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {

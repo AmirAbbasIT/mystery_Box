@@ -18,11 +18,11 @@ not a clean split anymore. For the full Phase 2 plan, see [[09-database-schema]]
 | `/admin/themes` | ✅ | List, create, edit, delete, plus a live colour-swatch preview — first real visual use of `colorSwatch` anywhere in the app (the storefront's filter chips don't use it) |
 | `/admin/prize-pools` | ✅ | List, create, edit, delete; nested prize-item editor (label/rarity/weight, ↑/↓ reorder, live odds %); real image upload; for `kind: "wheel"` a **live spinning preview** using the actual `WheelSpinLoader` component fed by the in-progress form state. Covers both `kind` values (wheel/egg) since it's one shared table — both are now wired to the storefront. |
 | Image storage | ✅ | Supabase Storage, public `catalogue-images` bucket (`node scripts/create-storage-bucket.mjs`) — not the database, not `public/images/`; see [[09-database-schema]] |
-| Storefront wired to DB | ✅ | `src/lib/catalogue.ts` — `/`, `/shop`, `/shop/{jewellery,makeup-beauty,stationery}`, `/wheel-spin`, `/mystery-eggs` read real data now, not `src/data/`. ISR (`revalidate = 60`), not full SSR. |
+| Storefront wired to DB | ✅ | `src/lib/catalogue.ts` — `/`, `/shop`, `/shop/[slug]`, `/wheel-spin`, `/mystery-eggs` read real data now, not `src/data/`. ISR (`revalidate = 60`), not full SSR. |
 | `/admin/settings` | ✅ | Site-wide colour palette picker — 4 curated presets (not a full theme editor), applied instantly across the whole storefront via `revalidatePath('/', 'layout')`. Live preview wraps real `Button`/`Badge`/`PriceTag` in a scoped `data-color-theme` div — same CSS rule as the site-wide one, zero duplicated colour values. Singleton (`SiteSettings`, one DB row), not the usual list/new/[id] pattern. |
 | `/admin/custom-requests` | ✅ | Phase 2b — list + detail (no create/delete, customer-originated only), status (`new→contacted→quoted→completed/archived`) + staff notes. `CustomRequestForm` (birthday builder) now really persists instead of faking a confirmation. |
 | `/admin/birthday-packages`, `/admin/seasonal-collections` | ⬜ | Not built — same pattern as Products/Categories/Themes/Prize Pools, see [[10-admin-panel]] |
-| `/admin/orders`, `/admin/customers` | ⬜ | Phase 2c, blocked on Stripe/checkout existing per [[10-admin-panel]] |
+| `/admin/orders`, `/admin/customers` | ⬜ | Phase 2c, needs checkout per [[10-admin-panel]] |
 
 **To run this locally:** copy `.env.local.example` to `.env.local`, fill in `DATABASE_URL`/
 `DIRECT_URL` from your Supabase project's connection strings and `SUPABASE_URL`/`SUPABASE_SECRET_KEY`
@@ -37,7 +37,7 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
 |---|---|---|
 | `/` | ✅ **DB-backed** | Hero, Shop by category (3 real categories from Postgres + 3 hardcoded extras: eggs/wheel/birthday), How it works, Testimonials, Trust signals |
 | `/shop` | ✅ **DB-backed** | 3 category cards + bestsellers grid, real Products/Categories |
-| `/shop/jewellery`, `/shop/makeup-beauty`, `/shop/stationery` | ✅ **DB-backed** | Theme filter chips + price sort (still client-side, now over real data), "Peek inside" transparency modal per product, `notFound()` if the category row is missing instead of a crash |
+| `/shop/[slug]` (any category) | ✅ **DB-backed** | Theme filter chips + price sort (still client-side, now over real data), "Peek inside" transparency modal per product, `notFound()` if the category row is missing instead of a crash |
 | `/mystery-eggs` | ✅ **DB-backed** | Tier selector (single/5/10/15), interactive crack-to-reveal per egg, odds accordion, real `PrizePool`/`PrizeItem` (`kind: "egg"`); friendly "check back soon" empty state if no egg tiers exist |
 | `/wheel-spin` | ✅ **DB-backed** | Interactive GSAP wheel, confetti + reveal on win, published odds table, real `PrizePool`/`PrizeItem`; friendly "check back soon" empty state (not a crash) if no wheel pool exists |
 | `/birthday-packages` | ✅ | Index linking to kids/adult-party |

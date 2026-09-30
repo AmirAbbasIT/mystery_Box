@@ -8,21 +8,25 @@ import styles from "../checkout.module.scss";
 export const metadata: Metadata = {
   title: "Order Confirmed",
   description: "Your Mystery Packed Gifts order is confirmed.",
+  robots: { index: false, follow: false },
 };
 
 interface CheckoutSuccessPageProps {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ order?: string }>;
 }
 
-export default async function CheckoutSuccessPage({ searchParams }: CheckoutSuccessPageProps) {
-  const { session_id: sessionId } = await searchParams;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const order = sessionId
-    ? await getPrismaClient().order.findUnique({
-        where: { stripeCheckoutSessionId: sessionId },
-        include: { items: true },
-      })
-    : null;
+export default async function CheckoutSuccessPage({ searchParams }: CheckoutSuccessPageProps) {
+  const { order: orderId } = await searchParams;
+
+  const order =
+    orderId && UUID_PATTERN.test(orderId)
+      ? await getPrismaClient().order.findUnique({
+          where: { id: orderId },
+          include: { items: true },
+        })
+      : null;
 
   return (
     <div className={styles.page}>
@@ -31,7 +35,11 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
 
       {order ? (
         <>
-          <p>Your payment is confirmed — a receipt is on its way to your email.</p>
+          <p>
+            {order.status === "payment_pending"
+              ? "PayPal is still processing your payment — we'll start packing as soon as it clears."
+              : "Your payment is confirmed — PayPal will email you a receipt."}
+          </p>
           <ul className={styles.itemList}>
             {order.items.map((item) => (
               <li key={item.id}>
@@ -40,17 +48,13 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
               </li>
             ))}
           </ul>
+          {order.shippingPence > 0 && <p>Shipping: {formatPrice(order.shippingPence / 100)}</p>}
           <p className={styles.total}>Total: {formatPrice(order.totalPence / 100)}</p>
-          <p>
-            Shipping to: {order.shippingLine1}
-            {order.shippingLine2 ? `, ${order.shippingLine2}` : ""}, {order.shippingCity},{" "}
-            {order.shippingPostcode}
-          </p>
         </>
       ) : (
         <p>
-          Thanks for your order — we&rsquo;re still confirming it with our payment provider. You&rsquo;ll
-          receive a confirmation email shortly.
+          Thanks for your order — we&rsquo;re still confirming it with PayPal. You&rsquo;ll receive a
+          receipt from PayPal by email shortly.
         </p>
       )}
 

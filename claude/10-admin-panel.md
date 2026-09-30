@@ -3,7 +3,7 @@
 **Status: all three phases are now live.** Phase 2a catalogue content is fully built end-to-end
 (DB → service → admin UI) for every entity — Products, Categories, Themes, Prize Pools, Birthday
 Packages, Seasonal Collections — plus Phase 2b's custom-requests inbox and Site Settings, and now
-Phase 2c: real guest checkout via Stripe, plus `/admin/orders`/`/admin/customers`. Decisions below
+Phase 2c: real guest checkout (PayPal since Sep 2026, originally Stripe), plus `/admin/orders`/`/admin/customers`. Decisions below
 were made explicitly with the user rather than assumed, since they're hard to reverse cheaply
 later — recorded here so they're not re-litigated by accident.
 
@@ -29,7 +29,7 @@ later — recorded here so they're not re-litigated by accident.
   management needed for a small team. Explicitly flagged as a gap to revisit — see **Access
   control** below for why.
 - **Scope order:** catalogue content first, then the custom-requests inbox, then orders/customers
-  last (blocked on Stripe/checkout existing — see [[07-roadmap]]).
+  last (blocked on checkout existing — see [[07-roadmap]]).
 - **Business logic lives in a services layer**, decoupled from both the admin UI and the DB engine,
   so either can change independently — this was an explicit ask, not just a nice-to-have. See
   **Layering** below.
@@ -251,9 +251,10 @@ pattern):
 - **Guest checkout only** — no customer accounts/login. Matches every other auth decision in this
   project (shared PIN admin, no user auth anywhere). `customers` is a plain email-deduped record
   captured at checkout time, not an authenticated entity — see [[06-entities-data-model]].
-- **Stripe Checkout (hosted), not Stripe Elements** — redirect to Stripe's own payment page and
-  back, rather than an embedded card form. Least code and PCI/security surface, matching the
-  project's recurring "no money to spend yet" constraint (see the Hosting note above).
+- **PayPal (JS SDK buttons + server-side Orders v2), replacing the original Stripe Checkout** —
+  switched Sep 2026 at the user's request; PayPal is the only provider (Stripe code/deps removed).
+  The buttons also offer guest debit/credit card, so card payments without a PayPal account still
+  work. Card data never touches our servers either way (PayPal-hosted iframes/popup).
 - **Shop Products only for v1** — Wheel Spin, Mystery Eggs, and Birthday Packages are not
   purchasable yet. Each has its own fulfillment wrinkle a normal product line item doesn't (a wheel
   spin/egg purchase needs the prize resolved server-side *at the moment of purchase*, not just
@@ -265,34 +266,39 @@ pattern):
    management; this is the correct-sized solution for guest-only checkout. `ProductCard`'s "Peek
    inside" modal is the only add-to-basket entry point today; `Header` shows a live item-count
    badge next to a `/basket` link.
-2. **`/basket`** (`BasketView.tsx`) lets the customer adjust quantity/remove lines, then submits a
-   form (cart JSON in a hidden field, same serialize-into-hidden-input pattern Prize Pools/Products
-   already use for nested data) to `createCheckoutSessionAction`
-   (`src/app/basket/actions.ts`). **The server never trusts the client's cart snapshot** — every
-   `productId` is re-looked-up against `products` for current price/stock/active before a Stripe
-   Checkout Session is created; a stale or tampered cart gets a clear inline error, not a bad
-   charge. On success, `redirect()`s straight to Stripe's hosted `session.url`.
-3. **The Stripe webhook is the only place an `Order` is ever created** — see
-   [[09-database-schema]]'s Orders & customers section for the full reasoning (idempotency,
-   why status defaults to `paid` not `pending`, the SetNull FK). Route:
-   `src/app/api/webhooks/stripe/route.ts` (raw-body signature verification via
-   `STRIPE_WEBHOOK_SECRET`) → `src/lib/orders.ts`'s `fulfillCheckoutSession()` (Customer upsert +
-   Order/OrderItem creation + stock decrement, one transaction).
-4. **`/checkout/success`** looks up the Order by `stripe_checkout_session_id` and shows a real
-   receipt if the webhook has already landed, or a generic "confirmation coming by email" message if
-   it hasn't yet (a real race — the browser's redirect back can arrive before Stripe's webhook does
-   — handled gracefully rather than erroring). Also clears the cart client-side. **`/checkout/cancel`**
-   is a simple "no payment taken, your basket is still here" page.
-5. **`/admin/orders`** (list + detail with a status dropdown: `paid → fulfilled/cancelled`) and
-   **`/admin/customers`** (list with email search + detail showing order history) are read/status-
-   update only, per the original plan — no create/delete, since every row here traces back to a
-   real Stripe payment. `src/admin/services/orders.service.ts` /
+2. **`/basket`** (`BasketView.tsx` + `PayPalCheckout.tsx`) shows subtotal, shipping (admin-set flat
+   fee + optional free-over threshold on `site_settings`, edited at `/admin/settings`) and total,
+   then renders PayPal's buttons. **The server never trusts the client's cart** — the button's
+   `createOrder` calls `createPayPalOrderAction` (`src/app/basket/actions.ts`) with only
+   `{productId, quantity}` pairs (shape/UUID/quantity-capped by `parseBasketRequest`); prices,
+   stock, active and shipping are re-read from the DB in `src/lib/orders.ts`'s
+   `startPayPalCheckout()`, which creates the PayPal order and a `pending_checkouts` snapshot of
+   exactly what it was created for.
+3. **Capture is server-side and verified** — `onApprove` calls `capturePayPalOrderAction` →
+   `completePayPalCheckout()`, which requires a matching `pending_checkouts` row, re-fetches the
+   order from PayPal and checks currency GBP + amount == our snapshot total + UK shipping address +
+   stock, *then* captures (idempotent via `PayPal-Request-Id`), re-checks the captured amount, and
+   records Customer/Order/OrderItems from the snapshot (never from the browser) + decrements stock
+   in one transaction. `orders.paypal_order_id` is unique, so concurrent callers can't double-record.
+   `INSTRUMENT_DECLINED` → `actions.restart()` so the buyer can pick another funding source.
+4. **`/api/webhooks/paypal`** verifies every event with PayPal's verify-webhook-signature API
+   (`PAYPAL_WEBHOOK_ID`) before reading it. `CHECKOUT.ORDER.APPROVED` runs the same
+   `completePayPalCheckout()` (safety net if the tab closes before `onApprove`);
+   `PAYMENT.CAPTURE.COMPLETED` settles `payment_pending` → `paid`; `DENIED` → `cancelled`;
+   `REFUNDED`/`REVERSED` → `refunded`.
+5. **`/checkout/success?order=<uuid>`** looks the Order up by our own random UUID (validated before
+   querying, `noindex`) and shows items/total but not the address. Also clears the cart client-side.
+6. **`/admin/orders`** (list + detail, now showing PayPal order/capture IDs and shipping) and
+   **`/admin/customers`** are read/status-update only. Staff can set `paid/fulfilled/cancelled`;
+   `payment_pending`/`refunded` only ever come from PayPal. `src/admin/services/orders.service.ts` /
    `customers.service.ts` own this read layer.
 
-**Requires user-supplied Stripe credentials to actually process a payment**: `STRIPE_SECRET_KEY`
-and `STRIPE_WEBHOOK_SECRET` in `.env.local` (see `.env.local.example`) — nothing in this build can
-create real Stripe keys; test-mode ones from the Stripe dashboard are enough to exercise the whole
-flow before going live.
+**Requires user-supplied PayPal credentials**: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`,
+`PAYPAL_ENVIRONMENT` (`sandbox`/`live`) and `PAYPAL_WEBHOOK_ID` — see `.env.local.example`. Sandbox
+credentials + sandbox buyer accounts exercise the whole flow before going live.
+
+**Security headers** (`next.config.ts`): site-wide CSP limiting script/frame/connect origins to self
++ PayPal, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`.
 
 **Not addressed by this build, worth tracking:**
 - **Admin auth is still the shared PIN**, not upgraded to per-staff accounts — this is exactly the
@@ -302,8 +308,9 @@ flow before going live.
   again here since this is the trigger point the earlier note was written for.
 - Stock-decrement race under concurrent purchases of the last unit — see
   [[09-database-schema]]'s accepted-limitation note.
-- No refund flow — cancelling an order in `/admin/orders` updates our `status` only, it does not
-  call Stripe to actually refund the charge.
+- No refund flow from the admin — refunds are issued in the PayPal dashboard; the refund webhook
+  then flips our order to `refunded` (a partial refund also shows as `refunded`).
+- `pending_checkouts` rows for abandoned PayPal checkouts are never cleaned up (small; prune later).
 
 ## Explicitly deferred (not in this planning pass)
 

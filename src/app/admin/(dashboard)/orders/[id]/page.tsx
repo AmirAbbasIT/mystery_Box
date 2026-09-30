@@ -38,7 +38,18 @@ export default async function AdminOrderDetailPage({
         </div>
         <div>
           <dt>Total</dt>
-          <dd>{formatPrice(order.total)}</dd>
+          <dd>
+            {formatPrice(order.total)}
+            {order.shipping > 0 && <> (incl. {formatPrice(order.shipping)} shipping)</>}
+          </dd>
+        </div>
+        <div>
+          <dt>PayPal</dt>
+          <dd>
+            Order {order.paypalOrderId}
+            <br />
+            Capture {order.paypalCaptureId ?? "—"}
+          </dd>
         </div>
         <div>
           <dt>Shipping address</dt>

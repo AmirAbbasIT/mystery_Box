@@ -164,3 +164,28 @@
   justify-content: space-between;
   margin-top: var(--space-2);
 }
+
+.divider {
+  margin-block: var(--space-6);
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 360px;
+
+  label {
+    font-weight: 700;
+    font-size: rem(14px);
+    color: var(--color-text);
+  }
+
+  input {
+    @include form-input;
+
+    font-size: rem(15px);
+  }
+}

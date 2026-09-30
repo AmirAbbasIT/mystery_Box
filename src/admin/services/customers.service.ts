@@ -1,7 +1,7 @@
 import "server-only";
 import { getPrismaClient } from "@/lib/db/client";
 
-/** Read-only — Customer rows are only ever created by src/lib/orders.ts (the Stripe webhook). */
+/** Read-only — Customer rows are only ever created by src/lib/orders.ts (PayPal checkout). */
 
 export interface CustomerRecord {
   id: string;

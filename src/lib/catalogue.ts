@@ -1,6 +1,7 @@
 import { getPrismaClient } from "@/lib/db/client";
 import type { Product, ProductImage, AgeSuitability } from "@/types/product";
-import type { Category, CategorySlug } from "@/types/category";
+import { cache } from "react";
+import type { Category } from "@/types/category";
 import type { Theme } from "@/types/theme";
 import type { PrizePool } from "@/types/prize-pool";
 import type { BirthdayPackage, BirthdayAudience } from "@/types/birthday-package";
@@ -32,7 +33,7 @@ function toProduct(row: ProductWithRelations): Product {
     name: row.name,
     description: row.description,
     price: row.pricePence / 100,
-    category: row.category.slug as CategorySlug,
+    category: row.category.slug,
     themeIds: row.themes.map((t) => t.themeId),
     images: row.images.map((image): ProductImage => ({ src: image.src, alt: image.alt })),
     ageSuitability: row.ageSuitability as AgeSuitability[],
@@ -53,7 +54,7 @@ export async function getProducts(): Promise<Product[]> {
   return rows.map(toProduct);
 }
 
-export async function getProductsByCategory(categorySlug: CategorySlug): Promise<Product[]> {
+export async function getProductsByCategory(categorySlug: string): Promise<Product[]> {
   const rows = await getPrismaClient().product.findMany({
     where: { active: true, category: { slug: categorySlug } },
     include: PRODUCT_INCLUDE,
@@ -75,17 +76,41 @@ export async function getCategories(): Promise<Category[]> {
 
   return categories.map((category) => ({
     id: category.id,
-    slug: category.slug as CategorySlug,
+    slug: category.slug,
     name: category.name,
     tagline: category.tagline,
     heroImage: category.heroImage,
-    priceFrom: priceFromByCategoryId.get(category.id) ?? 0,
+    priceFrom: priceFromByCategoryId.get(category.id) ?? null,
   }));
 }
 
-export async function getCategoryBySlug(slug: CategorySlug): Promise<Category | null> {
+/** cache()d so generateMetadata and the page share one lookup per request. */
+export const getCategoryBySlug = cache(async (slug: string): Promise<Category | null> => {
   const categories = await getCategories();
   return categories.find((category) => category.slug === slug) ?? null;
+});
+
+export interface ShopExtrasPricing {
+  eggsFrom: number | null;
+  wheelSpin: number | null;
+  birthdayPackagesFrom: number | null;
+}
+
+/** "From" prices for the home page's non-category entries (eggs, wheel, birthday packages). */
+export async function getShopExtrasPricing(): Promise<ShopExtrasPricing> {
+  const prisma = getPrismaClient();
+  const [eggs, wheel, packages] = await Promise.all([
+    prisma.prizePool.aggregate({ where: { kind: "egg" }, _min: { pricePence: true } }),
+    getWheelPrizePool(),
+    prisma.birthdayPackage.aggregate({ _min: { priceFromPence: true } }),
+  ]);
+
+  const toPounds = (pence: number | null | undefined) => (pence == null ? null : pence / 100);
+  return {
+    eggsFrom: toPounds(eggs._min.pricePence),
+    wheelSpin: wheel?.price ?? null,
+    birthdayPackagesFrom: toPounds(packages._min.priceFromPence),
+  };
 }
 
 export async function getThemes(): Promise<Theme[]> {

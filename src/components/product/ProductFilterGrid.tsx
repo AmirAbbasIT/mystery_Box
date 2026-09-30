@@ -82,7 +82,11 @@ export function ProductFilterGrid({ products, themes }: ProductFilterGridProps) 
       <ProductGrid
         products={filteredProducts}
         themes={themes}
-        emptyMessage="No boxes match this theme yet — try clearing filters."
+        emptyMessage={
+          products.length === 0
+            ? "Nothing on sale here right now — check back soon."
+            : "No boxes match this theme yet — try clearing filters."
+        }
       />
     </div>
   );

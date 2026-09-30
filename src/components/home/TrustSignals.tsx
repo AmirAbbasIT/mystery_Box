@@ -4,7 +4,10 @@ const SIGNALS = [
   { title: "Dispatched within 24–48h", description: "Fast UK dispatch on every order." },
   { title: "Family-run", description: "A small UK team, not a faceless warehouse." },
   { title: "Randomised, not rigged", description: "Every prize pool's odds are published up front." },
-  { title: "Secure checkout", description: "Payments are processed securely at checkout." },
+  {
+    title: "Secure PayPal checkout",
+    description: "Pay by PayPal or card — your card details are never shared with us.",
+  },
 ];
 
 export function TrustSignals() {

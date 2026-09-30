@@ -1,10 +1,10 @@
-export type CategorySlug = "jewellery" | "makeup-beauty" | "stationery";
-
 export interface Category {
   id: string;
-  slug: CategorySlug;
+  /** Admin-defined (auto-generated from the name) — any slug routes via /shop/[slug]. */
+  slug: string;
   name: string;
   tagline: string;
   heroImage: string;
-  priceFrom: number;
+  /** Cheapest active product's price; null when the category has nothing on sale right now. */
+  priceFrom: number | null;
 }

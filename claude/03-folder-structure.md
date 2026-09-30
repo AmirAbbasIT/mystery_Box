@@ -17,9 +17,7 @@ mystery_box/
 │   │   ├── error.tsx              # root error boundary — DB-backed pages can hit real errors now
 │   │   ├── shop/
 │   │   │   ├── page.tsx           # category index + bestsellers — DB-backed, revalidate=60
-│   │   │   ├── jewellery/page.tsx    # DB-backed (Products/Categories/Themes), revalidate=60
-│   │   │   ├── makeup-beauty/page.tsx
-│   │   │   └── stationery/page.tsx
+│   │   │   └── [slug]/page.tsx    # any admin-created category — ISR on first visit, revalidate=60
 │   │   ├── mystery-eggs/
 │   │   │   ├── page.tsx                # DB-backed (PrizePool kind: "egg"), revalidate=60
 │   │   │   └── EggTierSelector.tsx   # route-colocated, not reused elsewhere

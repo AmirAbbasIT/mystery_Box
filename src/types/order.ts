@@ -1,8 +1,12 @@
-// Phase 2c — checkout is live (guest checkout via Stripe Checkout, no accounts). Orders are only
-// ever created from the checkout.session.completed webhook (src/lib/orders.ts), never
-// optimistically at "proceed to checkout" time — see claude/10-admin-panel.md.
+// Phase 2c — checkout is live (guest checkout via PayPal, no accounts). Orders are only ever
+// created once PayPal has captured the payment (src/lib/orders.ts), never optimistically — see
+// claude/10-admin-panel.md. payment_pending = PayPal accepted the capture but hasn't settled it
+// yet (flips to paid via webhook); refunded is set by the refund/chargeback webhooks.
 
-export type OrderStatus = "paid" | "fulfilled" | "cancelled";
+export type OrderStatus = "payment_pending" | "paid" | "fulfilled" | "cancelled" | "refunded";
+
+/** Statuses staff can set by hand — the payment-driven ones only ever come from PayPal. */
+export const STAFF_ORDER_STATUSES: OrderStatus[] = ["paid", "fulfilled", "cancelled"];
 
 export interface OrderItem {
   id: string;
@@ -18,8 +22,10 @@ export interface Order {
   id: string;
   customerId: string;
   status: OrderStatus;
-  /** GBP total actually charged. */
+  /** GBP total actually charged, including shipping. */
   total: number;
+  /** GBP shipping portion of total. */
+  shipping: number;
   shippingName: string;
   shippingLine1: string;
   shippingLine2?: string | null;

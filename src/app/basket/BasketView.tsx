@@ -1,17 +1,24 @@
 "use client";
 
-import { useActionState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart/CartContext";
-import { createCheckoutSessionAction } from "./actions";
+import { calculateShippingPence, type ShippingSettings } from "@/lib/shipping";
+import { PayPalCheckout } from "./PayPalCheckout";
 import styles from "./page.module.scss";
 
-export function BasketView() {
+interface BasketViewProps {
+  paypalClientId: string | null;
+  shipping: ShippingSettings;
+}
+
+export function BasketView({ paypalClientId, shipping }: BasketViewProps) {
   const { items, subtotal, setQuantity, removeItem } = useCart();
-  const [state, formAction, pending] = useActionState(createCheckoutSessionAction, {});
+
+  const subtotalPence = Math.round(subtotal * 100);
+  const shippingPence = calculateShippingPence(subtotalPence, shipping);
 
   if (items.length === 0) {
     return (
@@ -71,26 +78,37 @@ export function BasketView() {
         ))}
       </div>
 
-      <form action={formAction} className={styles.summary}>
-        <input type="hidden" name="items" value={JSON.stringify(items)} readOnly />
-
+      <div className={styles.summary}>
         <div className={styles.summaryRow}>
           <span>Subtotal</span>
           <span className={styles.subtotal}>{formatPrice(subtotal)}</span>
         </div>
-        <p className={styles.linePrice}>Shipping and any taxes are calculated at checkout.</p>
-
-        {state.error && (
-          <p className={styles.error} role="alert">
-            {state.error}
+        <div className={styles.summaryRow}>
+          <span>UK shipping</span>
+          <span>{shippingPence === 0 ? "Free" : formatPrice(shippingPence / 100)}</span>
+        </div>
+        {shipping.freeThresholdPence !== null && shippingPence > 0 && (
+          <p className={styles.linePrice}>
+            Free shipping on orders over {formatPrice(shipping.freeThresholdPence / 100)}.
           </p>
         )}
+        <div className={styles.summaryRow}>
+          <span>Total</span>
+          <span className={styles.subtotal}>{formatPrice(subtotal + shippingPence / 100)}</span>
+        </div>
+        <p className={styles.linePrice}>
+          Pay with PayPal or a debit/credit card. Prices are confirmed at checkout.
+        </p>
 
-        <Button type="submit" size="lg" disabled={pending} className={styles.checkoutButton}>
-          {pending ? "Redirecting…" : "Proceed to Checkout"}
-        </Button>
+        {paypalClientId ? (
+          <PayPalCheckout clientId={paypalClientId} items={items} />
+        ) : (
+          <p className={styles.error} role="alert">
+            Checkout is temporarily unavailable — please try again later.
+          </p>
+        )}
         <Link href="/shop">Continue shopping</Link>
-      </form>
+      </div>
     </div>
   );
 }

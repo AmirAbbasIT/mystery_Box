@@ -31,7 +31,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
         <div className={styles.content}>
           <h3 className={styles.name}>{category.name}</h3>
           <p className={styles.tagline}>{category.tagline}</p>
-          <PriceTag price={category.priceFrom} from />
+          {category.priceFrom !== null && <PriceTag price={category.priceFrom} from />}
         </div>
       </Link>
     </motion.div>

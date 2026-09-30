@@ -18,8 +18,8 @@ export function Hero() {
           <span className={styles.eyebrow}>UK mystery gifting, made for the reveal</span>
           <h1 className={styles.title}>Every box is a moment worth unboxing.</h1>
           <p className={styles.subtitle}>
-            Jewellery, beauty and stationery mystery boxes, pink eggs and a genuine wheel spin —
-            pick your theme, pick your thrill.
+            Mystery gift boxes for birthdays, weddings and every season, plus pink eggs and a wheel
+            spin — pick your occasion, pick your thrill.
           </p>
           <div className={styles.ctas}>
             <Button href="/shop" size="lg">

@@ -5,7 +5,7 @@ import type { OrderStatus } from "@/types/order";
 
 /**
  * Read/status-update only — there is no createOrder/deleteOrder here on purpose. Orders are only
- * ever created by src/lib/orders.ts (the Stripe webhook), matching claude/10-admin-panel.md's
+ * ever created by src/lib/orders.ts (PayPal checkout), matching claude/10-admin-panel.md's
  * Phase 2c scope: "no new business logic beyond what checkout already needs to write."
  */
 
@@ -21,6 +21,9 @@ export interface OrderRecord {
   id: string;
   status: OrderStatus;
   total: number;
+  shipping: number;
+  paypalOrderId: string;
+  paypalCaptureId: string | null;
   customerId: string;
   customerName: string;
   customerEmail: string;
@@ -46,6 +49,9 @@ function toRecord(row: OrderWithRelations): OrderRecord {
     id: row.id,
     status: row.status as OrderStatus,
     total: row.totalPence / 100,
+    shipping: row.shippingPence / 100,
+    paypalOrderId: row.paypalOrderId,
+    paypalCaptureId: row.paypalCaptureId,
     customerId: row.customerId,
     customerName: row.customer.name,
     customerEmail: row.customer.email,

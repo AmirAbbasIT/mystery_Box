@@ -8,7 +8,7 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "Shop Mystery Boxes",
   description:
-    "Jewellery, makeup & beauty and stationery mystery boxes — pick a category and a theme.",
+    "Mystery gift boxes for birthdays, weddings and the seasons — pick an occasion and a theme.",
 };
 
 export default async function ShopIndexPage() {
@@ -23,7 +23,7 @@ export default async function ShopIndexPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>Shop Mystery Boxes</h1>
-        <p>Three categories, six themes, endless reveal moments.</p>
+        <p>A mystery box for every occasion — pick yours and let the reveal do the rest.</p>
       </header>
 
       <section className={styles.categories} aria-label="Categories">

@@ -8,7 +8,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Mystery Pink Eggs",
-  description: "Crack open a mystery pink egg — choose single, 5, 10 or 15 pack tiers.",
+  description: "Crack open mystery pink eggs — choose a pack size and see what could be inside.",
 };
 
 export default async function MysteryEggsPage() {
@@ -34,8 +34,8 @@ export default async function MysteryEggsPage() {
       <header className={styles.header}>
         <h1>Mystery Pink Eggs</h1>
         <p>
-          Pick a tier and try a preview crack below — no purchase needed. Every real order gets its
-          own genuine surprise, randomised to these exact published odds.
+          Pick a pack and try a free preview crack below — it&rsquo;s just for fun and uses the
+          prize list shown underneath.
         </p>
       </header>
 

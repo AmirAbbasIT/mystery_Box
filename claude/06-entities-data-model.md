@@ -10,7 +10,7 @@ imported anywhere at runtime — see [[10-admin-panel]]'s Phase 2a completion no
 ## Product (`types/product.ts`, DB-backed via `lib/catalogue.ts`)
 
 The catalogue item for the three shop categories (Jewellery, Makeup & Beauty, Stationery). Key
-fields: `category` (`CategorySlug`), `themeIds` (links to `Theme`), `price` (GBP as a plain
+fields: `category` (category slug), `themeIds` (links to `Theme`), `price` (GBP as a plain
 number, e.g. `10` = £10.00 — formatted via `formatPrice()` in `lib/utils.ts`; the Prisma `Product`
 model stores this as `pricePence`, an integer, converted at the `lib/catalogue.ts` boundary),
 `whatCouldBeInside` (the UK-consumer-law-motivated transparency panel content, shown in a `Modal`
@@ -20,12 +20,13 @@ missing image with a placeholder rather than assuming `images[0]` exists.
 
 ## Category (`types/category.ts`, DB-backed via `lib/catalogue.ts`)
 
-Just the three shop categories — `jewellery`, `makeup-beauty`, `stationery`. Deliberately not a
-generic catalogue-wide taxonomy; Mystery Eggs, Wheel Spin, and Birthday Packages are separate
+Admin-defined occasions (birthday, christmas, halloween, valentines, wedding as of Sep 2026 — the
+original fixed jewellery/makeup-beauty/stationery set was replaced by real data). Slugs are free-form
+and all route through `/shop/[slug]`, so adding a category needs no code change; Mystery Eggs, Wheel Spin, and Birthday Packages are separate
 top-level sections (see below), not `Category` values, because they have fundamentally different
 shapes (a `PrizePool` vs a `Product`). `priceFrom` isn't a stored column — `lib/catalogue.ts`
 computes it as `min(price)` across that category's active products via a Prisma `groupBy`, exactly
-as planned in [[09-database-schema]].
+as planned in [[09-database-schema]], and is `null` (price hidden) when nothing in it is on sale.
 
 ## Theme (`types/theme.ts`, DB-backed via `lib/catalogue.ts`)
 
@@ -89,11 +90,10 @@ pages/routing exist ahead of stock so the seasonal calendar structure is already
 email-deduped record (`upsert(where: {email})`), not an authenticated entity — there's no login,
 so "Customer" really just means "someone who has checked out at least once," looked up by admin via
 email search at `/admin/customers`. `Order`/`OrderItem` are only ever created by
-`src/lib/orders.ts`'s `fulfillCheckoutSession()`, called exclusively from the Stripe
-`checkout.session.completed` webhook — never optimistically when a customer starts checkout, so an
-`Order` existing always means Stripe actually confirmed payment (`OrderStatus` therefore starts at
-`"paid"`, not `"pending"` — nothing in this build ever writes a not-yet-paid order). `OrderItem`'s
+`src/lib/orders.ts`'s `completePayPalCheckout()`, only after PayPal captures the payment — never
+optimistically when a customer starts checkout, so an `Order` existing always means money was
+captured (`"payment_pending"` only while PayPal settles it; `"refunded"` via webhook). `OrderItem`'s
 `productId` is nullable: `productName`/`unitPrice` are a snapshot taken at order time, so a later
 `Product` deletion sets the FK null instead of touching historic order data — see
 [[09-database-schema]] for the full schema-level reasoning, and [[10-admin-panel]]'s Phase 2c
-section for the end-to-end checkout flow (cart → Stripe Checkout → webhook → admin).
+section for the end-to-end checkout flow (cart → PayPal buttons → server capture/webhook → admin).

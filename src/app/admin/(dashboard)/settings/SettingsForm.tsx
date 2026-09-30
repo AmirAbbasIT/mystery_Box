@@ -74,10 +74,10 @@ export function SettingsForm({ currentPaletteId, action }: SettingsFormProps) {
         <div className={styles.previewCard}>
           <div className={styles.previewBadgeRow}>
             <Badge tone="primary">New</Badge>
-            <Badge tone="secondary">Kawaii Pastels</Badge>
+            <Badge tone="secondary">Florals</Badge>
             <Badge tone="accent">Bestseller</Badge>
           </div>
-          <h3 className={styles.previewTitle}>Jewellery Mystery Box</h3>
+          <h3 className={styles.previewTitle}>Birthday Mystery Box</h3>
           <p className={styles.previewDescription}>A hand-picked edit in soft, cute-core styles.</p>
           <div className={styles.previewFooter}>
             <PriceTag price={10} />

@@ -22,8 +22,8 @@ so far:
   Actions/Route Handlers and the DB client, so the storefront and admin dashboard share one
   implementation of things like "pick a prize respecting odds" or "validate a custom request" —
   see [[10-admin-panel]]'s Layering section for the full 4-layer breakdown.
-- **Stripe** for checkout/payments (unchanged from original plan) — blocks Phase 2c
-  (orders/customers admin) per [[10-admin-panel]].
+- **PayPal** for checkout/payments (replaced the original Stripe plan, Sep 2026) — see
+  [[10-admin-panel]]'s Phase 2c section.
 - **Admin dashboard starts embedded as `/admin` inside this Next.js app**, not a separate app — the
   user chose to defer the standalone-app split (originally sketched as a Vite/React app below)
   the same way Phase 1 deferred the monorepo split. Revisit only if embedding actually becomes a
@@ -37,9 +37,9 @@ so far:
   and [[09-database-schema]] for the schema.
 - ~~`CustomRequestInput` becomes a real persisted `CustomRequest`~~ **Done** — see [[10-admin-panel]].
 - `PrizePool` odds move from hardcoded mock weights to admin-editable data (Phase 2a) — **done**.
-- ~~Checkout system (basket, Stripe, Order/OrderItem/Customer persistence, `/admin/orders` +
-  `/admin/customers`)~~ **Done (Aug 2026)** — guest checkout only, Shop Products only for v1, Stripe
-  Checkout (hosted) not Elements — see [[10-admin-panel]]'s Phase 2c section for the full build and
+- ~~Checkout system (basket, payments, Order/OrderItem/Customer persistence, `/admin/orders` +
+  `/admin/customers`)~~ **Done (Aug 2026)** — guest checkout only, Shop Products only for v1;
+  switched from Stripe Checkout to PayPal in Sep 2026 — see [[10-admin-panel]]'s Phase 2c section for the full build and
   what's explicitly still deferred (admin auth upgrade, refunds, Wheel Spin/Eggs/Birthday Packages
   at checkout).
 - **Repo restructure to a monorepo** (Turborepo or plain workspaces): `apps/web` (this storefront),
