@@ -266,19 +266,23 @@ pattern):
    management; this is the correct-sized solution for guest-only checkout. `ProductCard`'s "Peek
    inside" modal is the only add-to-basket entry point today; `Header` shows a live item-count
    badge next to a `/basket` link.
-2. **`/basket`** (`BasketView.tsx` + `PayPalCheckout.tsx`) shows subtotal, shipping (admin-set flat
-   fee + optional free-over threshold on `site_settings`, edited at `/admin/settings`) and total,
-   then renders PayPal's buttons. **The server never trusts the client's cart** — the button's
-   `createOrder` calls `createPayPalOrderAction` (`src/app/basket/actions.ts`) with only
-   `{productId, quantity}` pairs (shape/UUID/quantity-capped by `parseBasketRequest`); prices,
-   stock, active and shipping are re-read from the DB in `src/lib/orders.ts`'s
-   `startPayPalCheckout()`, which creates the PayPal order and a `pending_checkouts` snapshot of
-   exactly what it was created for.
+2. **`/basket`** shows subtotal, shipping (admin-set flat fee + optional free-over threshold on
+   `site_settings`, edited at `/admin/settings`) and total, then links to **`/checkout`**
+   (`CheckoutView.tsx`): step 1 collects the buyer's name/email/optional phone and a UK delivery
+   address (optional separate recipient name, for gifts), validated by the shared
+   `src/lib/checkout-details.ts`; step 2 reviews details + order summary and renders PayPal's
+   buttons (`PayPalCheckout.tsx`). **The server never trusts the client** — `createOrder` calls
+   `createPayPalOrderAction` (`src/app/checkout/actions.ts`) with only `{productId, quantity}`
+   pairs (shape/UUID/quantity-capped by `parseBasketRequest`) plus the details, which it
+   re-validates; prices, stock, active and shipping are re-read from the DB in
+   `src/lib/orders.ts`'s `startPayPalCheckout()`, which creates the PayPal order with the address
+   locked (`SET_PROVIDED_ADDRESS`) and a `pending_checkouts` snapshot of items, totals and details.
 3. **Capture is server-side and verified** — `onApprove` calls `capturePayPalOrderAction` →
    `completePayPalCheckout()`, which requires a matching `pending_checkouts` row, re-fetches the
-   order from PayPal and checks currency GBP + amount == our snapshot total + UK shipping address +
-   stock, *then* captures (idempotent via `PayPal-Request-Id`), re-checks the captured amount, and
-   records Customer/Order/OrderItems from the snapshot (never from the browser) + decrements stock
+   order from PayPal and checks currency GBP + amount == our snapshot total + PayPal's address is
+   still the one entered (GB + same postcode) + stock, *then* captures (idempotent via `PayPal-Request-Id`), re-checks the captured amount, and
+   records Customer (the email/name entered on /checkout, not the PayPal payer's) and
+   Order/OrderItems from the snapshot (never from the browser) + decrements stock
    in one transaction. `orders.paypal_order_id` is unique, so concurrent callers can't double-record.
    `INSTRUMENT_DECLINED` → `actions.restart()` so the buyer can pick another funding source.
 4. **`/api/webhooks/paypal`** verifies every event with PayPal's verify-webhook-signature API

@@ -205,18 +205,27 @@ model SiteSettings {
   @@map("site_settings")
 }
 
-// Server-side snapshot of what a PayPal order was created for (items, prices, shipping, total),
-// written when the buyer clicks the PayPal button. Capture (src/lib/orders.ts) only proceeds if
-// PayPal's approved amount matches totalPence here, and Order/OrderItem rows are built from this
-// snapshot — never from anything the browser sends after approval.
+// Server-side snapshot of what a PayPal order was created for (items, prices, shipping, total, and
+// the customer/delivery details entered on /checkout), written when the buyer clicks the PayPal
+// button. Capture (src/lib/orders.ts) only proceeds if PayPal's approved amount matches totalPence
+// here, and Customer/Order/OrderItem rows are built from this snapshot — never from anything the
+// browser sends after approval.
 model PendingCheckout {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  paypalOrderId String   @unique @map("paypal_order_id")
-  items         Json
-  subtotalPence Int      @map("subtotal_pence")
-  shippingPence Int      @map("shipping_pence")
-  totalPence    Int      @map("total_pence")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paypalOrderId    String   @unique @map("paypal_order_id")
+  items            Json
+  subtotalPence    Int      @map("subtotal_pence")
+  shippingPence    Int      @map("shipping_pence")
+  totalPence       Int      @map("total_pence")
+  customerName     String   @map("customer_name")
+  customerEmail    String   @map("customer_email")
+  customerPhone    String?  @map("customer_phone")
+  shippingName     String   @map("shipping_name")
+  shippingLine1    String   @map("shipping_line1")
+  shippingLine2    String?  @map("shipping_line2")
+  shippingCity     String   @map("shipping_city")
+  shippingPostcode String   @map("shipping_postcode")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("pending_checkouts")
 }
@@ -246,6 +255,7 @@ model Order {
   shippingPence    Int      @default(0) @map("shipping_pence")
   paypalOrderId    String   @unique @map("paypal_order_id")
   paypalCaptureId  String?  @unique @map("paypal_capture_id")
+  contactPhone     String?  @map("contact_phone")
   shippingName     String   @map("shipping_name")
   shippingLine1    String   @map("shipping_line1")
   shippingLine2    String?  @map("shipping_line2")

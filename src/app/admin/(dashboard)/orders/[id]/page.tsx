@@ -26,6 +26,12 @@ export default async function AdminOrderDetailPage({
             <Link href={`/admin/customers/${order.customerId}`}>{order.customerName}</Link>
             <br />
             {order.customerEmail}
+            {order.contactPhone && (
+              <>
+                <br />
+                {order.contactPhone}
+              </>
+            )}
           </dd>
         </div>
         <div>

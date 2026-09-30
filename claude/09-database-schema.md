@@ -91,7 +91,9 @@ orders       (id, customer_id fk→customers, status text ('payment_pending','pa
 order_items  (id, order_id fk→orders (cascade), product_id fk→products null (set null on delete),
              product_name, unit_price_pence int, quantity int)
 pending_checkouts (id, paypal_order_id unique, items jsonb, subtotal_pence, shipping_pence,
-             total_pence, created_at) — server snapshot per PayPal order, checked at capture
+             total_pence, customer_name/email/phone, shipping_name/line1/line2/city/postcode,
+             created_at) — server snapshot per PayPal order, checked at capture
+orders       += contact_phone null
 site_settings  += shipping_flat_pence int default 0, free_shipping_threshold_pence int null
 ```
 

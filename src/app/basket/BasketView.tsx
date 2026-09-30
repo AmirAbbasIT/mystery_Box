@@ -6,15 +6,13 @@ import { Button } from "@/components/ui";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart/CartContext";
 import { calculateShippingPence, type ShippingSettings } from "@/lib/shipping";
-import { PayPalCheckout } from "./PayPalCheckout";
 import styles from "./page.module.scss";
 
 interface BasketViewProps {
-  paypalClientId: string | null;
   shipping: ShippingSettings;
 }
 
-export function BasketView({ paypalClientId, shipping }: BasketViewProps) {
+export function BasketView({ shipping }: BasketViewProps) {
   const { items, subtotal, setQuantity, removeItem } = useCart();
 
   const subtotalPence = Math.round(subtotal * 100);
@@ -36,7 +34,13 @@ export function BasketView({ paypalClientId, shipping }: BasketViewProps) {
           <div key={item.productId} className={styles.line}>
             <div className={styles.imageWrapper}>
               {item.image ? (
-                <Image src={item.image} alt="" fill sizes="72px" className={styles.image} />
+                <Image
+                  src={item.image}
+                  alt=""
+                  fill
+                  sizes="72px"
+                  className={styles.image}
+                />
               ) : null}
             </div>
 
@@ -65,7 +69,9 @@ export function BasketView({ paypalClientId, shipping }: BasketViewProps) {
             </div>
 
             <div className={styles.lineActions}>
-              <span className={styles.lineTotal}>{formatPrice(item.price * item.quantity)}</span>
+              <span className={styles.lineTotal}>
+                {formatPrice(item.price * item.quantity)}
+              </span>
               <button
                 type="button"
                 className={styles.removeButton}
@@ -94,19 +100,17 @@ export function BasketView({ paypalClientId, shipping }: BasketViewProps) {
         )}
         <div className={styles.summaryRow}>
           <span>Total</span>
-          <span className={styles.subtotal}>{formatPrice(subtotal + shippingPence / 100)}</span>
+          <span className={styles.subtotal}>
+            {formatPrice(subtotal + shippingPence / 100)}
+          </span>
         </div>
         <p className={styles.linePrice}>
-          Pay with PayPal or a debit/credit card. Prices are confirmed at checkout.
+          Next, enter your delivery details — then pay with PayPal or a debit/credit card.
         </p>
 
-        {paypalClientId ? (
-          <PayPalCheckout clientId={paypalClientId} items={items} />
-        ) : (
-          <p className={styles.error} role="alert">
-            Checkout is temporarily unavailable — please try again later.
-          </p>
-        )}
+        <Button href="/checkout" size="lg" className={styles.checkoutButton}>
+          Proceed to Checkout
+        </Button>
         <Link href="/shop">Continue shopping</Link>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import "server-only";
+import { SITE_NAME } from "@/lib/constants";
 
 /**
  * Server-only PayPal REST client (Orders v2 + webhook verification) over plain fetch — no SDK
@@ -55,7 +56,12 @@ async function getAccessToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new PayPalApiError("PayPal authentication failed.", response.status, null, null);
+    throw new PayPalApiError(
+      "PayPal authentication failed.",
+      response.status,
+      null,
+      null,
+    );
   }
 
   const data = (await response.json()) as { access_token: string; expires_in: number };
@@ -109,13 +115,15 @@ export interface PayPalMoney {
 
 export interface PayPalCapture {
   id: string;
-  status: "COMPLETED" | "PENDING" | "DECLINED" | "FAILED" | "PARTIALLY_REFUNDED" | "REFUNDED";
+  status:
+    "COMPLETED" | "PENDING" | "DECLINED" | "FAILED" | "PARTIALLY_REFUNDED" | "REFUNDED";
   amount: PayPalMoney;
 }
 
 export interface PayPalOrder {
   id: string;
-  status: "CREATED" | "SAVED" | "APPROVED" | "VOIDED" | "COMPLETED" | "PAYER_ACTION_REQUIRED";
+  status:
+    "CREATED" | "SAVED" | "APPROVED" | "VOIDED" | "COMPLETED" | "PAYER_ACTION_REQUIRED";
   payer?: {
     email_address?: string;
     name?: { given_name?: string; surname?: string };
@@ -142,6 +150,13 @@ export interface CreatePayPalOrderInput {
   subtotalPence: number;
   shippingPence: number;
   totalPence: number;
+  shipping: {
+    name: string;
+    line1: string;
+    line2: string | null;
+    city: string;
+    postcode: string;
+  };
   requestId: string;
 }
 
@@ -156,14 +171,25 @@ export function valueToPence(value: string): number {
   return Number(match[1]) * 100 + Number((match[2] ?? "0").padEnd(2, "0"));
 }
 
-const gbp = (pence: number): PayPalMoney => ({ currency_code: "GBP", value: penceToValue(pence) });
+const gbp = (pence: number): PayPalMoney => ({
+  currency_code: "GBP",
+  value: penceToValue(pence),
+});
 
-export async function createPayPalOrder(input: CreatePayPalOrderInput): Promise<PayPalOrder> {
+export async function createPayPalOrder(
+  input: CreatePayPalOrderInput,
+): Promise<PayPalOrder> {
   return paypalRequest<PayPalOrder>("/v2/checkout/orders", {
     method: "POST",
     requestId: input.requestId,
     body: JSON.stringify({
       intent: "CAPTURE",
+      // SET_PROVIDED_ADDRESS: PayPal shows the address entered on /checkout and doesn't let the
+      // buyer switch it, so what we recorded is where the parcel actually goes.
+      application_context: {
+        brand_name: SITE_NAME,
+        shipping_preference: "SET_PROVIDED_ADDRESS",
+      },
       purchase_units: [
         {
           amount: {
@@ -180,6 +206,17 @@ export async function createPayPalOrder(input: CreatePayPalOrderInput): Promise<
             unit_amount: gbp(item.unitPricePence),
             category: "PHYSICAL_GOODS",
           })),
+          shipping: {
+            type: "SHIPPING",
+            name: { full_name: input.shipping.name },
+            address: {
+              address_line_1: input.shipping.line1,
+              ...(input.shipping.line2 ? { address_line_2: input.shipping.line2 } : {}),
+              admin_area_2: input.shipping.city,
+              postal_code: input.shipping.postcode,
+              country_code: "GB",
+            },
+          },
         },
       ],
     }),
@@ -187,9 +224,12 @@ export async function createPayPalOrder(input: CreatePayPalOrderInput): Promise<
 }
 
 export async function getPayPalOrder(orderId: string): Promise<PayPalOrder> {
-  return paypalRequest<PayPalOrder>(`/v2/checkout/orders/${encodeURIComponent(orderId)}`, {
-    method: "GET",
-  });
+  return paypalRequest<PayPalOrder>(
+    `/v2/checkout/orders/${encodeURIComponent(orderId)}`,
+    {
+      method: "GET",
+    },
+  );
 }
 
 /**
@@ -197,7 +237,10 @@ export async function getPayPalOrder(orderId: string): Promise<PayPalOrder> {
  * CHECKOUT.ORDER.APPROVED webhook can both call this for the same order and only one capture
  * ever happens; the second call gets the first call's response back.
  */
-export async function capturePayPalOrder(orderId: string, requestId: string): Promise<PayPalOrder> {
+export async function capturePayPalOrder(
+  orderId: string,
+  requestId: string,
+): Promise<PayPalOrder> {
   return paypalRequest<PayPalOrder>(
     `/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`,
     { method: "POST", requestId },
@@ -209,7 +252,10 @@ export async function capturePayPalOrder(orderId: string, requestId: string): Pr
  * verbatim rather than JSON.parse/stringify round-tripped, since the signature covers PayPal's
  * exact bytes.
  */
-export async function verifyPayPalWebhook(headers: Headers, rawBody: string): Promise<boolean> {
+export async function verifyPayPalWebhook(
+  headers: Headers,
+  rawBody: string,
+): Promise<boolean> {
   const webhookId = process.env.PAYPAL_WEBHOOK_ID;
   if (!webhookId) return false;
 

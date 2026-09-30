@@ -24,6 +24,7 @@ export interface OrderRecord {
   shipping: number;
   paypalOrderId: string;
   paypalCaptureId: string | null;
+  contactPhone: string | null;
   customerId: string;
   customerName: string;
   customerEmail: string;
@@ -52,6 +53,7 @@ function toRecord(row: OrderWithRelations): OrderRecord {
     shipping: row.shippingPence / 100,
     paypalOrderId: row.paypalOrderId,
     paypalCaptureId: row.paypalCaptureId,
+    contactPhone: row.contactPhone,
     customerId: row.customerId,
     customerName: row.customer.name,
     customerEmail: row.customer.email,

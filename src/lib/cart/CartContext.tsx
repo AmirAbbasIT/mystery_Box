@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  type ReactNode,
+} from "react";
 import type { CartItem } from "@/types/cart";
 
 const STORAGE_KEY = "mystery-packed-gifts-basket";
@@ -34,7 +41,9 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
         return state.filter((line) => line.productId !== action.productId);
       }
       return state.map((line) =>
-        line.productId === action.productId ? { ...line, quantity: action.quantity } : line,
+        line.productId === action.productId
+          ? { ...line, quantity: action.quantity }
+          : line,
       );
     case "clear":
       // Bail out (same reference) if already empty — keeps a `clear()` called from a mount-only
@@ -47,6 +56,8 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
 
 interface CartContextValue {
   items: CartItem[];
+  /** False until the saved basket has been read from localStorage (first client render). */
+  isReady: boolean;
   itemCount: number;
   subtotal: number;
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
@@ -55,25 +66,49 @@ interface CartContextValue {
   clear: () => void;
 }
 
+interface CartState {
+  items: CartItem[];
+  isReady: boolean;
+}
+
+/** Tracks whether localStorage has been read yet alongside the lines themselves. */
+function cartStateReducer(state: CartState, action: CartAction): CartState {
+  if (action.type === "hydrate") return { items: action.items, isReady: true };
+  const items = cartReducer(state.items, action);
+  return items === state.items ? state : { ...state, items };
+}
+
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, dispatch] = useReducer(cartReducer, []);
+  const [{ items, isReady }, dispatch] = useReducer(cartStateReducer, {
+    items: [],
+    isReady: false,
+  });
 
   // Hydrate from localStorage once on mount — SSR has no access to it, so the
   // initial reducer state must start empty to avoid a hydration mismatch.
   useEffect(() => {
+    let saved: CartItem[] = [];
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) dispatch({ type: "hydrate", items: JSON.parse(raw) });
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) saved = parsed;
     } catch {
       // Corrupt or inaccessible storage — start with an empty basket.
     }
+    dispatch({ type: "hydrate", items: saved });
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    // Not before hydration — that would overwrite the saved basket with the empty initial state.
+    if (!isReady) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Storage full or blocked — the basket still works for this visit.
+    }
+  }, [items, isReady]);
 
   const value = useMemo<CartContextValue>(() => {
     const itemCount = items.reduce((sum, line) => sum + line.quantity, 0);
@@ -81,14 +116,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     return {
       items,
+      isReady,
       itemCount,
       subtotal,
       addItem: (item, quantity = 1) => dispatch({ type: "add", item, quantity }),
       removeItem: (productId) => dispatch({ type: "remove", productId }),
-      setQuantity: (productId, quantity) => dispatch({ type: "setQuantity", productId, quantity }),
+      setQuantity: (productId, quantity) =>
+        dispatch({ type: "setQuantity", productId, quantity }),
       clear: () => dispatch({ type: "clear" }),
     };
-  }, [items]);
+  }, [items, isReady]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

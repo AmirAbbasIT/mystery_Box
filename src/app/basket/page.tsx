@@ -16,7 +16,7 @@ export default async function BasketPage() {
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Your Basket</h1>
-      <BasketView paypalClientId={process.env.PAYPAL_CLIENT_ID ?? null} shipping={shipping} />
+      <BasketView shipping={shipping} />
     </div>
   );
 }

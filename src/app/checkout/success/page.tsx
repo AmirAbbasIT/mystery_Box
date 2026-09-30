@@ -17,7 +17,9 @@ interface CheckoutSuccessPageProps {
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CheckoutSuccessPage({ searchParams }: CheckoutSuccessPageProps) {
+export default async function CheckoutSuccessPage({
+  searchParams,
+}: CheckoutSuccessPageProps) {
   const { order: orderId } = await searchParams;
 
   const order =
@@ -48,13 +50,15 @@ export default async function CheckoutSuccessPage({ searchParams }: CheckoutSucc
               </li>
             ))}
           </ul>
-          {order.shippingPence > 0 && <p>Shipping: {formatPrice(order.shippingPence / 100)}</p>}
+          {order.shippingPence > 0 && (
+            <p>Shipping: {formatPrice(order.shippingPence / 100)}</p>
+          )}
           <p className={styles.total}>Total: {formatPrice(order.totalPence / 100)}</p>
         </>
       ) : (
         <p>
-          Thanks for your order — we&rsquo;re still confirming it with PayPal. You&rsquo;ll receive a
-          receipt from PayPal by email shortly.
+          Thanks for your order — we&rsquo;re still confirming it with PayPal.
+          You&rsquo;ll receive a receipt from PayPal by email shortly.
         </p>
       )}
 

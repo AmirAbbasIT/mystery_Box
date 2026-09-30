@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import type { CartItem } from "@/types/cart";
+import type { CheckoutDetails } from "@/lib/checkout-details";
 import { capturePayPalOrderAction, createPayPalOrderAction } from "./actions";
 import styles from "./page.module.scss";
 
@@ -34,19 +35,22 @@ declare global {
 interface PayPalCheckoutProps {
   clientId: string;
   items: CartItem[];
+  details: CheckoutDetails;
 }
 
-export function PayPalCheckout({ clientId, items }: PayPalCheckoutProps) {
+export function PayPalCheckout({ clientId, items, details }: PayPalCheckoutProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef(items);
+  const detailsRef = useRef(details);
   const [sdkReady, setSdkReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     itemsRef.current = items;
-  }, [items]);
+    detailsRef.current = details;
+  }, [items, details]);
 
   useEffect(() => {
     if (!sdkReady || !window.paypal || !containerRef.current) return;
@@ -57,6 +61,7 @@ export function PayPalCheckout({ clientId, items }: PayPalCheckoutProps) {
         setError(null);
         const result = await createPayPalOrderAction(
           itemsRef.current.map(({ productId, quantity }) => ({ productId, quantity })),
+          detailsRef.current,
         );
         if (!result.ok) {
           setError(result.error);
@@ -103,7 +108,11 @@ export function PayPalCheckout({ clientId, items }: PayPalCheckoutProps) {
 
   return (
     <div className={styles.paypal}>
-      <Script src={sdkUrl} strategy="afterInteractive" onReady={() => setSdkReady(true)} />
+      <Script
+        src={sdkUrl}
+        strategy="afterInteractive"
+        onReady={() => setSdkReady(true)}
+      />
 
       {error && (
         <p className={styles.error} role="alert">
