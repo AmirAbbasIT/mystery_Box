@@ -93,7 +93,13 @@ order_items  (id, order_id fk→orders (cascade), product_id fk→products null 
 pending_checkouts (id, paypal_order_id unique, items jsonb, subtotal_pence, shipping_pence,
              total_pence, customer_name/email/phone, shipping_name/line1/line2/city/postcode,
              created_at) — server snapshot per PayPal order, checked at capture
-orders       += contact_phone null
+orders       += contact_phone null, coupon_id fk→coupons null (RESTRICT), coupon_code (snapshot),
+             discount_pence, shipping_discount_pence   [total = items + shipping − both]
+pending_checkouts += coupon_id (no FK), coupon_code, discount_pence, shipping_discount_pence
+coupons      (id, code unique (uppercase), note, discount_type 'percentage'|'fixed'|'free_shipping',
+             percent_off, amount_off_pence, max_discount_pence, min_subtotal_pence, usage_limit,
+             per_customer_limit, starts_at, ends_at, active, times_used, created_at, updated_at)
+coupon_attempts (id, client_key (HMAC of IP), created_at) — failed-code rate limiting
 site_settings  += shipping_flat_pence int default 0, free_shipping_threshold_pence int null
 ```
 

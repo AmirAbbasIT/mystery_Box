@@ -14,11 +14,16 @@ const NAV_LINKS = [
   { label: "Seasonal", href: "/admin/seasonal" },
   { label: "Custom Requests", href: "/admin/custom-requests" },
   { label: "Orders", href: "/admin/orders" },
+  { label: "Coupons", href: "/admin/coupons" },
   { label: "Customers", href: "/admin/customers" },
   { label: "Settings", href: "/admin/settings" },
 ];
 
-export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
+export default async function AdminDashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   await requireAdmin();
 
   return (

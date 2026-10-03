@@ -72,6 +72,8 @@ interface PayPalCheckoutProps {
   billing: BillingAddress;
   /** e.g. "£22.00" — shown on the card Pay button. */
   totalLabel: string;
+  /** Applied promo code, re-validated server-side when the order is created and before capture. */
+  couponCode: string | null;
 }
 
 /**
@@ -86,6 +88,7 @@ export function PayPalCheckout({
   details,
   billing,
   totalLabel,
+  couponCode,
 }: PayPalCheckoutProps) {
   const router = useRouter();
   const buttonsRef = useRef<HTMLDivElement>(null);
@@ -95,6 +98,7 @@ export function PayPalCheckout({
   const cardFieldsRef = useRef<PayPalCardFieldsInstance | null>(null);
   const itemsRef = useRef(items);
   const detailsRef = useRef(details);
+  const couponCodeRef = useRef(couponCode);
   const [mode, setMode] = useState<"loading" | "card-fields" | "buttons-only">("loading");
   const [error, setError] = useState<string | null>(null);
   const [cardPaying, setCardPaying] = useState(false);
@@ -103,7 +107,8 @@ export function PayPalCheckout({
   useEffect(() => {
     itemsRef.current = items;
     detailsRef.current = details;
-  }, [items, details]);
+    couponCodeRef.current = couponCode;
+  }, [items, details, couponCode]);
 
   const createOrderFor = (source: PaymentSource) => async () => {
     setError(null);
@@ -111,6 +116,7 @@ export function PayPalCheckout({
       itemsRef.current.map(({ productId, quantity }) => ({ productId, quantity })),
       detailsRef.current,
       source,
+      couponCodeRef.current,
     );
     if (!result.ok) {
       setError(result.error);

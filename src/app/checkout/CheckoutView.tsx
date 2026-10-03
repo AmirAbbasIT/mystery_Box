@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart/CartContext";
-import { calculateShippingPence, type ShippingSettings } from "@/lib/shipping";
+import type { ShippingSettings } from "@/lib/shipping";
+import { calculateOrderTotals, type CouponPricing } from "@/lib/coupons";
 import {
   validateBillingAddress,
   validateCheckoutDetails,
@@ -14,6 +15,7 @@ import {
   type CheckoutField,
 } from "@/lib/checkout-details";
 import { PayPalCheckout } from "./PayPalCheckout";
+import { PromoCodeBox } from "./PromoCodeBox";
 import styles from "./page.module.scss";
 
 interface CheckoutViewProps {
@@ -87,9 +89,11 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
   const [billingSameAsDelivery, setBillingSameAsDelivery] = useState(true);
   const [step, setStep] = useState<"details" | "review">("details");
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [coupon, setCoupon] = useState<CouponPricing | null>(null);
 
   const subtotalPence = Math.round(subtotal * 100);
-  const shippingPence = calculateShippingPence(subtotalPence, shipping);
+  const totals = calculateOrderTotals(subtotalPence, shipping, coupon);
+  const totalLabel = formatPrice(totals.totalPence / 100);
 
   if (!isReady) return null;
 
@@ -102,7 +106,7 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
     );
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formValues = Object.fromEntries(new FormData(event.currentTarget));
     const result = validateCheckoutDetails(formValues);
@@ -144,17 +148,33 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
         <span>Subtotal</span>
         <span>{formatPrice(subtotal)}</span>
       </div>
+      {totals.discountPence > 0 && coupon && (
+        <div className={`${styles.summaryRow} ${styles.discountRow}`}>
+          <span>Discount ({coupon.code})</span>
+          <span>−{formatPrice(totals.discountPence / 100)}</span>
+        </div>
+      )}
       <div className={styles.summaryRow}>
         <span>UK shipping</span>
-        <span>{shippingPence === 0 ? "Free" : formatPrice(shippingPence / 100)}</span>
+        <span>
+          {totals.shippingPence - totals.shippingDiscountPence === 0
+            ? "Free"
+            : formatPrice(totals.shippingPence / 100)}
+        </span>
       </div>
       <div className={styles.summaryRow}>
         <span>Total</span>
-        <span className={styles.total}>
-          {formatPrice(subtotal + shippingPence / 100)}
-        </span>
+        <span className={styles.total}>{totalLabel}</span>
       </div>
-      <p className={styles.linePrice}>Prices and stock are confirmed when you pay.</p>
+      <PromoCodeBox
+        items={items}
+        email={details?.email ?? null}
+        applied={coupon}
+        onChange={setCoupon}
+      />
+      <p className={styles.linePrice}>
+        Prices, stock and codes are confirmed when you pay.
+      </p>
     </aside>
   );
 
@@ -224,7 +244,8 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
                 items={items}
                 details={details}
                 billing={billingAddress}
-                totalLabel={formatPrice(subtotal + shippingPence / 100)}
+                totalLabel={totalLabel}
+                couponCode={coupon?.code ?? null}
               />
             ) : (
               <p className={styles.error} role="alert">

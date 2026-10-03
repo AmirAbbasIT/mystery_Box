@@ -50,6 +50,12 @@ export default async function CheckoutSuccessPage({
               </li>
             ))}
           </ul>
+          {order.couponCode && order.discountPence + order.shippingDiscountPence > 0 && (
+            <p>
+              Discount ({order.couponCode}): −
+              {formatPrice((order.discountPence + order.shippingDiscountPence) / 100)}
+            </p>
+          )}
           {order.shippingPence > 0 && (
             <p>Shipping: {formatPrice(order.shippingPence / 100)}</p>
           )}

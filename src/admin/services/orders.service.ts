@@ -22,6 +22,10 @@ export interface OrderRecord {
   status: OrderStatus;
   total: number;
   shipping: number;
+  /** GBP — item discount plus any shipping waived by a free-shipping coupon. */
+  discount: number;
+  couponId: string | null;
+  couponCode: string | null;
   paypalOrderId: string;
   paypalCaptureId: string | null;
   contactPhone: string | null;
@@ -51,6 +55,9 @@ function toRecord(row: OrderWithRelations): OrderRecord {
     status: row.status as OrderStatus,
     total: row.totalPence / 100,
     shipping: row.shippingPence / 100,
+    discount: (row.discountPence + row.shippingDiscountPence) / 100,
+    couponId: row.couponId,
+    couponCode: row.couponCode,
     paypalOrderId: row.paypalOrderId,
     paypalCaptureId: row.paypalCaptureId,
     contactPhone: row.contactPhone,

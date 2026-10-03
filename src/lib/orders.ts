@@ -1,7 +1,8 @@
 import "server-only";
 import { getPrismaClient } from "@/lib/db/client";
-import { calculateShippingPence } from "@/lib/shipping";
 import { getShippingSettings } from "@/lib/site-settings";
+import { calculateOrderTotals, type CouponPricing } from "@/lib/coupons";
+import { checkCoupon, findCouponByCode, findCouponById } from "@/lib/coupons.server";
 import {
   PayPalApiError,
   capturePayPalOrder,
@@ -34,7 +35,16 @@ interface PendingItem {
 }
 
 export type CheckoutResult<T> =
-  ({ ok: true } & T) | { ok: false; error: string; retry?: boolean };
+  | ({ ok: true } & T)
+  | {
+      ok: false;
+      error: string;
+      retry?: boolean;
+      /** The promo code was rejected (the rest of the checkout may be fine). */
+      couponRejected?: boolean;
+      /** The code doesn't exist at all — counts towards the guessing limit. */
+      unknownCoupon?: boolean;
+    };
 
 /** Accepts only well-formed {productId, quantity} pairs; merges duplicate lines. */
 export function parseBasketRequest(input: unknown): Map<string, number> | null {
@@ -56,13 +66,11 @@ export function parseBasketRequest(input: unknown): Map<string, number> | null {
   return quantities;
 }
 
-export async function startPayPalCheckout(
+/** Re-prices the basket from the DB (never the browser's prices) and checks stock/availability. */
+async function priceBasket(
   quantities: Map<string, number>,
-  details: CheckoutDetails,
-  paymentSource: "paypal" | "card",
-): Promise<CheckoutResult<{ paypalOrderId: string }>> {
-  const prisma = getPrismaClient();
-  const products = await prisma.product.findMany({
+): Promise<CheckoutResult<{ items: PendingItem[]; subtotalPence: number }>> {
+  const products = await getPrismaClient().product.findMany({
     where: { id: { in: [...quantities.keys()] } },
   });
   const productById = new Map(products.map((product) => [product.id, product]));
@@ -94,11 +102,74 @@ export async function startPayPalCheckout(
     (sum, item) => sum + item.unitPricePence * item.quantity,
     0,
   );
-  const shippingPence = calculateShippingPence(
+  return { ok: true, items, subtotalPence };
+}
+
+/** Apply-button preview: is this code usable for this basket (and this email, if known yet)? */
+export async function previewCoupon(
+  quantities: Map<string, number>,
+  code: string,
+  email: string | null,
+): Promise<CheckoutResult<{ pricing: CouponPricing }>> {
+  const basket = await priceBasket(quantities);
+  if (!basket.ok) return basket;
+
+  const check = await checkCoupon(await findCouponByCode(code), {
+    subtotalPence: basket.subtotalPence,
+    email,
+  });
+  if (!check.ok) {
+    return {
+      ok: false,
+      error: check.error,
+      couponRejected: true,
+      unknownCoupon: check.unknownCode,
+    };
+  }
+  return { ok: true, pricing: check.pricing };
+}
+
+export async function startPayPalCheckout(
+  quantities: Map<string, number>,
+  details: CheckoutDetails,
+  paymentSource: "paypal" | "card",
+  couponCode: string | null,
+): Promise<CheckoutResult<{ paypalOrderId: string }>> {
+  const prisma = getPrismaClient();
+  const basket = await priceBasket(quantities);
+  if (!basket.ok) return basket;
+  const { items, subtotalPence } = basket;
+
+  let coupon: { id: string; pricing: CouponPricing } | null = null;
+  if (couponCode) {
+    const check = await checkCoupon(await findCouponByCode(couponCode), {
+      subtotalPence,
+      email: details.email,
+    });
+    if (!check.ok) {
+      return {
+        ok: false,
+        error: `${check.error} Remove the code to continue without it.`,
+        couponRejected: true,
+        unknownCoupon: check.unknownCode,
+      };
+    }
+    coupon = { id: check.coupon.id, pricing: check.pricing };
+  }
+
+  const totals = calculateOrderTotals(
     subtotalPence,
     await getShippingSettings(),
+    coupon?.pricing ?? null,
   );
-  const totalPence = subtotalPence + shippingPence;
+  if (totals.totalPence <= 0) {
+    return {
+      ok: false,
+      error:
+        "This code covers your whole order — please contact us and we'll complete it for you.",
+      couponRejected: true,
+    };
+  }
   const requestId = crypto.randomUUID();
   const shippingName = details.recipientName ?? details.fullName;
 
@@ -110,8 +181,10 @@ export async function startPayPalCheckout(
       quantity: item.quantity,
     })),
     subtotalPence,
-    shippingPence,
-    totalPence,
+    shippingPence: totals.shippingPence,
+    discountPence: totals.discountPence,
+    shippingDiscountPence: totals.shippingDiscountPence,
+    totalPence: totals.totalPence,
     shipping: {
       name: shippingName,
       line1: details.line1,
@@ -129,8 +202,12 @@ export async function startPayPalCheckout(
       paypalOrderId: paypalOrder.id,
       items: items as unknown as Prisma.InputJsonValue,
       subtotalPence,
-      shippingPence,
-      totalPence,
+      shippingPence: totals.shippingPence,
+      totalPence: totals.totalPence,
+      couponId: coupon?.id ?? null,
+      couponCode: coupon?.pricing.code ?? null,
+      discountPence: totals.discountPence,
+      shippingDiscountPence: totals.shippingDiscountPence,
       customerName: details.fullName,
       customerEmail: details.email,
       customerPhone: details.phone,
@@ -216,6 +293,22 @@ export async function completePayPalCheckout(
       };
     }
 
+    // The code may have expired, been switched off or run out while they were paying. The price
+    // is already fixed in the PayPal order, so refuse rather than charge an invalid discount.
+    if (pending.couponId) {
+      const couponCheck = await checkCoupon(await findCouponById(pending.couponId), {
+        subtotalPence: pending.subtotalPence,
+        email: pending.customerEmail,
+      });
+      if (!couponCheck.ok) {
+        return {
+          ok: false,
+          error: `${couponCheck.error} You have not been charged — remove the code and pay again.`,
+          couponRejected: true,
+        };
+      }
+    }
+
     const products = await prisma.product.findMany({
       where: { id: { in: items.map((item) => item.productId) } },
     });
@@ -265,6 +358,17 @@ export async function completePayPalCheckout(
 
   try {
     const order = await prisma.$transaction(async (tx) => {
+      // Normally guaranteed by the pre-capture check; only missing if an admin deleted an unused
+      // coupon mid-payment after capture already happened — keep the code snapshot, drop the FK.
+      const couponId =
+        pending.couponId &&
+        (await tx.coupon.findUnique({
+          where: { id: pending.couponId },
+          select: { id: true },
+        }))
+          ? pending.couponId
+          : null;
+
       const customer = await tx.customer.upsert({
         where: { email },
         update: { name: pending.customerName },
@@ -286,9 +390,22 @@ export async function completePayPalCheckout(
           shippingCity: pending.shippingCity,
           shippingPostcode: pending.shippingPostcode,
           shippingCountry: "GB",
+          couponId,
+          couponCode: pending.couponCode,
+          discountPence: pending.discountPence,
+          shippingDiscountPence: pending.shippingDiscountPence,
           items: { create: items },
         },
       });
+
+      // The only place a coupon use is counted — after payment, in the same transaction that
+      // records the order, so abandoned checkouts never use one up.
+      if (couponId) {
+        await tx.coupon.update({
+          where: { id: couponId },
+          data: { timesUsed: { increment: 1 } },
+        });
+      }
 
       for (const item of items) {
         // updateMany (not update) so a since-deleted product is a silent no-op — stock

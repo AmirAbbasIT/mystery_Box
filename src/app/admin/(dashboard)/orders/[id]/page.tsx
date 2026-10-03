@@ -23,7 +23,9 @@ export default async function AdminOrderDetailPage({
         <div>
           <dt>Customer</dt>
           <dd>
-            <Link href={`/admin/customers/${order.customerId}`}>{order.customerName}</Link>
+            <Link href={`/admin/customers/${order.customerId}`}>
+              {order.customerName}
+            </Link>
             <br />
             {order.customerEmail}
             {order.contactPhone && (
@@ -47,6 +49,20 @@ export default async function AdminOrderDetailPage({
           <dd>
             {formatPrice(order.total)}
             {order.shipping > 0 && <> (incl. {formatPrice(order.shipping)} shipping)</>}
+            {order.couponCode && (
+              <>
+                <br />
+                Coupon{" "}
+                {order.couponId ? (
+                  <Link href={`/admin/coupons/${order.couponId}`}>
+                    {order.couponCode}
+                  </Link>
+                ) : (
+                  order.couponCode
+                )}
+                : −{formatPrice(order.discount)}
+              </>
+            )}
           </dd>
         </div>
         <div>

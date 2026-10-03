@@ -311,6 +311,20 @@ PayPal/Pay Later buttons; card orders are created with `payment_source.card` and
 to the standard smart buttons, whose card option collects billing itself. Live accounts must be
 approved for "Advanced Credit and Debit Card Payments" by PayPal.
 
+**Coupons / promo codes** (`/admin/coupons`, `src/lib/coupons.ts` pure pricing,
+`src/lib/coupons.server.ts` validity + rate limiting): percentage (optional cap), fixed, or free
+shipping; optional minimum subtotal, total uses, uses per customer (by email), UK-date start/end
+window, active switch. Rules: one code per order; item discount never exceeds the subtotal and
+percentages round down; the free-shipping threshold is judged on the subtotal *after* the
+discount; a £0 total is refused (PayPal can't take it). The checkout's Apply button
+(`applyCouponAction`) is a preview only. The code is re-checked when the PayPal order is created
+(discount sent as PayPal `discount`/`shipping_discount` breakdown lines) and again right before
+capture, refusing without charging if it has since expired, been switched off or run out.
+`times_used` is incremented only in the transaction that records a paid order, so abandoned
+checkouts never use one up. A simultaneous race for the last use can overshoot by one (accepted, no
+reservations). Refunds don't give a use back. Unknown codes count towards a 10-per-10-minutes limit
+per visitor. Used coupons can't be deleted or renamed, only switched off.
+
 **Security headers** (`next.config.ts`): site-wide CSP limiting script/frame/connect origins to self
 + PayPal, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`.
 

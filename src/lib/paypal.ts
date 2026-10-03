@@ -157,6 +157,8 @@ export interface CreatePayPalOrderInput {
   items: Array<{ sku: string; name: string; unitPricePence: number; quantity: number }>;
   subtotalPence: number;
   shippingPence: number;
+  discountPence: number;
+  shippingDiscountPence: number;
   totalPence: number;
   shipping: {
     name: string;
@@ -217,6 +219,12 @@ export async function createPayPalOrder(
             breakdown: {
               item_total: gbp(input.subtotalPence),
               shipping: gbp(input.shippingPence),
+              // Shown as separate lines on the buyer's PayPal receipt. PayPal requires
+              // value = item_total + shipping - discount - shipping_discount.
+              ...(input.discountPence > 0 ? { discount: gbp(input.discountPence) } : {}),
+              ...(input.shippingDiscountPence > 0
+                ? { shipping_discount: gbp(input.shippingDiscountPence) }
+                : {}),
             },
           },
           items: input.items.map((item) => ({
