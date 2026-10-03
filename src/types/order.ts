@@ -3,10 +3,23 @@
 // claude/10-admin-panel.md. payment_pending = PayPal accepted the capture but hasn't settled it
 // yet (flips to paid via webhook); refunded is set by the refund/chargeback webhooks.
 
-export type OrderStatus = "payment_pending" | "paid" | "fulfilled" | "cancelled" | "refunded";
+export type OrderStatus =
+  | "payment_pending"
+  | "paid"
+  | "packing"
+  | "dispatched"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
 
 /** Statuses staff can set by hand — the payment-driven ones only ever come from PayPal. */
-export const STAFF_ORDER_STATUSES: OrderStatus[] = ["paid", "fulfilled", "cancelled"];
+export const STAFF_ORDER_STATUSES: OrderStatus[] = [
+  "paid",
+  "packing",
+  "dispatched",
+  "delivered",
+  "cancelled",
+];
 
 export interface OrderItem {
   id: string;

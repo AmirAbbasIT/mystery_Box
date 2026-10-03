@@ -169,6 +169,8 @@ export interface CreatePayPalOrderInput {
   };
   /** "card" = our Card Fields form; "paypal" = the PayPal / Pay Later buttons. */
   paymentSource: "paypal" | "card";
+  /** Our order number — shown against the payment in PayPal, so the two are easy to match. */
+  invoiceId: string;
   requestId: string;
 }
 
@@ -214,6 +216,7 @@ export async function createPayPalOrder(
           }),
       purchase_units: [
         {
+          invoice_id: input.invoiceId,
           amount: {
             ...gbp(input.totalPence),
             breakdown: {

@@ -1,6 +1,4 @@
 import "server-only";
-import { createHmac } from "node:crypto";
-import { headers } from "next/headers";
 import { getPrismaClient } from "@/lib/db/client";
 import { formatPrice } from "@/lib/utils";
 import {
@@ -84,42 +82,3 @@ export async function findCouponByCode(code: string): Promise<Coupon | null> {
 export async function findCouponById(id: string): Promise<Coupon | null> {
   return getPrismaClient().coupon.findUnique({ where: { id } });
 }
-
-/* Guessing protection: at most MAX_FAILED_ATTEMPTS unknown codes per visitor per window. */
-
-const MAX_FAILED_ATTEMPTS = 10;
-const WINDOW_MS = 10 * 60 * 1000;
-const RETENTION_MS = 24 * 60 * 60 * 1000;
-
-async function getClientKey(): Promise<string> {
-  const requestHeaders = await headers();
-  const ip =
-    requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    requestHeaders.get("x-real-ip") ||
-    "unknown";
-  // Store an HMAC rather than the raw IP — enough to rate limit, not a log of visitors' IPs.
-  return createHmac("sha256", process.env.ADMIN_SESSION_SECRET ?? "coupon-attempts")
-    .update(ip)
-    .digest("hex");
-}
-
-export async function isCouponGuessingLimited(): Promise<boolean> {
-  const recentFailures = await getPrismaClient().couponAttempt.count({
-    where: {
-      clientKey: await getClientKey(),
-      createdAt: { gt: new Date(Date.now() - WINDOW_MS) },
-    },
-  });
-  return recentFailures >= MAX_FAILED_ATTEMPTS;
-}
-
-export async function recordFailedCouponAttempt(): Promise<void> {
-  const prisma = getPrismaClient();
-  await prisma.couponAttempt.create({ data: { clientKey: await getClientKey() } });
-  await prisma.couponAttempt.deleteMany({
-    where: { createdAt: { lt: new Date(Date.now() - RETENTION_MS) } },
-  });
-}
-
-export const TOO_MANY_ATTEMPTS =
-  "Too many attempts — please wait a few minutes and try again.";

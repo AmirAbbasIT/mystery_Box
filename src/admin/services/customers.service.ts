@@ -13,7 +13,9 @@ export interface CustomerRecord {
 
 export async function listCustomers(emailSearch?: string): Promise<CustomerRecord[]> {
   const rows = await getPrismaClient().customer.findMany({
-    where: emailSearch ? { email: { contains: emailSearch, mode: "insensitive" } } : undefined,
+    where: emailSearch
+      ? { email: { contains: emailSearch, mode: "insensitive" } }
+      : undefined,
     include: { _count: { select: { orders: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -29,6 +31,7 @@ export async function listCustomers(emailSearch?: string): Promise<CustomerRecor
 
 export interface CustomerOrderSummary {
   id: string;
+  orderNumber: string;
   status: string;
   total: number;
   createdAt: string;
@@ -53,6 +56,7 @@ export async function getCustomer(id: string): Promise<CustomerDetailRecord | nu
     orderCount: row.orders.length,
     orders: row.orders.map((order) => ({
       id: order.id,
+      orderNumber: order.orderNumber,
       status: order.status,
       total: order.totalPence / 100,
       createdAt: order.createdAt.toISOString(),

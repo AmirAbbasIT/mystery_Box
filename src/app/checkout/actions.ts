@@ -2,11 +2,7 @@
 
 import { validateCheckoutDetails } from "@/lib/checkout-details";
 import { normaliseCouponCode, type CouponPricing } from "@/lib/coupons";
-import {
-  TOO_MANY_ATTEMPTS,
-  isCouponGuessingLimited,
-  recordFailedCouponAttempt,
-} from "@/lib/coupons.server";
+import { TOO_MANY_ATTEMPTS, isRateLimited, recordFailedAttempt } from "@/lib/rate-limit";
 import {
   completePayPalCheckout,
   parseBasketRequest,
@@ -36,11 +32,11 @@ export async function applyCouponAction(
   }
 
   try {
-    if (await isCouponGuessingLimited()) return { ok: false, error: TOO_MANY_ATTEMPTS };
+    if (await isRateLimited("coupon")) return { ok: false, error: TOO_MANY_ATTEMPTS };
 
     const code = normaliseCouponCode(rawCode);
     if (!code) {
-      await recordFailedCouponAttempt();
+      await recordFailedAttempt("coupon");
       return { ok: false, error: NOT_VALID, couponRejected: true };
     }
 
@@ -51,7 +47,7 @@ export async function applyCouponAction(
         : null;
 
     const result = await previewCoupon(quantities, code, email);
-    if (!result.ok && result.unknownCoupon) await recordFailedCouponAttempt();
+    if (!result.ok && result.unknownCoupon) await recordFailedAttempt("coupon");
     return result;
   } catch (error) {
     console.error("Coupon preview failed", error);
@@ -98,7 +94,7 @@ export async function createPayPalOrderAction(
   }
 
   try {
-    if (couponCode && (await isCouponGuessingLimited())) {
+    if (couponCode && (await isRateLimited("coupon"))) {
       return { ok: false, error: TOO_MANY_ATTEMPTS, couponRejected: true };
     }
     const result = await startPayPalCheckout(
@@ -107,7 +103,7 @@ export async function createPayPalOrderAction(
       paymentSource,
       couponCode,
     );
-    if (!result.ok && result.unknownCoupon) await recordFailedCouponAttempt();
+    if (!result.ok && result.unknownCoupon) await recordFailedAttempt("coupon");
     return result;
   } catch (error) {
     console.error("PayPal order creation failed", error);

@@ -36,6 +36,7 @@ export default async function AdminCustomerDetailPage({
       <table className={styles.table}>
         <thead>
           <tr>
+            <th>Order</th>
             <th>Status</th>
             <th>Total</th>
             <th>Placed</th>
@@ -45,6 +46,7 @@ export default async function AdminCustomerDetailPage({
         <tbody>
           {customer.orders.map((order) => (
             <tr key={order.id}>
+              <td>{order.orderNumber}</td>
               <td>{order.status}</td>
               <td>{formatPrice(order.total)}</td>
               <td>{new Date(order.createdAt).toLocaleDateString("en-GB")}</td>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/paypal";
 import { Prisma } from "@/generated/prisma/client";
 import type { CheckoutDetails } from "@/lib/checkout-details";
+import { generateOrderNumber } from "@/lib/order-number";
 
 /**
  * Checkout write path. The browser only ever supplies (a) which products and how many plus the
@@ -171,6 +172,7 @@ export async function startPayPalCheckout(
     };
   }
   const requestId = crypto.randomUUID();
+  const orderNumber = generateOrderNumber();
   const shippingName = details.recipientName ?? details.fullName;
 
   const paypalOrder = await createPayPalOrder({
@@ -193,6 +195,7 @@ export async function startPayPalCheckout(
       postcode: details.postcode,
     },
     paymentSource,
+    invoiceId: orderNumber,
     requestId,
   });
 
@@ -200,6 +203,7 @@ export async function startPayPalCheckout(
     data: {
       id: requestId,
       paypalOrderId: paypalOrder.id,
+      orderNumber,
       items: items as unknown as Prisma.InputJsonValue,
       subtotalPence,
       shippingPence: totals.shippingPence,
@@ -356,76 +360,90 @@ export async function completePayPalCheckout(
 
   const email = pending.customerEmail;
 
-  try {
-    const order = await prisma.$transaction(async (tx) => {
-      // Normally guaranteed by the pre-capture check; only missing if an admin deleted an unused
-      // coupon mid-payment after capture already happened — keep the code snapshot, drop the FK.
-      const couponId =
-        pending.couponId &&
-        (await tx.coupon.findUnique({
-          where: { id: pending.couponId },
-          select: { id: true },
-        }))
-          ? pending.couponId
-          : null;
+  // Retries only cover the (≈1 in 10^8) chance of a random order number colliding; a unique
+  // clash on paypalOrderId means a concurrent call already recorded this order.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const order = await prisma.$transaction(async (tx) => {
+        // Normally guaranteed by the pre-capture check; only missing if an admin deleted an unused
+        // coupon mid-payment after capture already happened — keep the code snapshot, drop the FK.
+        const couponId =
+          pending.couponId &&
+          (await tx.coupon.findUnique({
+            where: { id: pending.couponId },
+            select: { id: true },
+          }))
+            ? pending.couponId
+            : null;
 
-      const customer = await tx.customer.upsert({
-        where: { email },
-        update: { name: pending.customerName },
-        create: { email, name: pending.customerName },
+        const customer = await tx.customer.upsert({
+          where: { email },
+          update: { name: pending.customerName },
+          create: { email, name: pending.customerName },
+        });
+
+        const created = await tx.order.create({
+          data: {
+            // The number already sent to PayPal as invoice_id; a fresh one only on a retry after a
+            // (practically impossible) clash, or for checkouts started before numbers existed.
+            orderNumber:
+              attempt === 1 && pending.orderNumber
+                ? pending.orderNumber
+                : generateOrderNumber(),
+            customerId: customer.id,
+            status: capture.status === "COMPLETED" ? "paid" : "payment_pending",
+            totalPence: pending.totalPence,
+            shippingPence: pending.shippingPence,
+            paypalOrderId,
+            paypalCaptureId: capture.id,
+            contactPhone: pending.customerPhone,
+            shippingName: pending.shippingName,
+            shippingLine1: pending.shippingLine1,
+            shippingLine2: pending.shippingLine2,
+            shippingCity: pending.shippingCity,
+            shippingPostcode: pending.shippingPostcode,
+            shippingCountry: "GB",
+            couponId,
+            couponCode: pending.couponCode,
+            discountPence: pending.discountPence,
+            shippingDiscountPence: pending.shippingDiscountPence,
+            items: { create: items },
+          },
+        });
+
+        // The only place a coupon use is counted — after payment, in the same transaction that
+        // records the order, so abandoned checkouts never use one up.
+        if (couponId) {
+          await tx.coupon.update({
+            where: { id: couponId },
+            data: { timesUsed: { increment: 1 } },
+          });
+        }
+
+        for (const item of items) {
+          // updateMany (not update) so a since-deleted product is a silent no-op — stock
+          // reconciliation is best-effort and must never block recording a captured payment.
+          await tx.product.updateMany({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+
+        return created;
       });
 
-      const created = await tx.order.create({
-        data: {
-          customerId: customer.id,
-          status: capture.status === "COMPLETED" ? "paid" : "payment_pending",
-          totalPence: pending.totalPence,
-          shippingPence: pending.shippingPence,
-          paypalOrderId,
-          paypalCaptureId: capture.id,
-          contactPhone: pending.customerPhone,
-          shippingName: pending.shippingName,
-          shippingLine1: pending.shippingLine1,
-          shippingLine2: pending.shippingLine2,
-          shippingCity: pending.shippingCity,
-          shippingPostcode: pending.shippingPostcode,
-          shippingCountry: "GB",
-          couponId,
-          couponCode: pending.couponCode,
-          discountPence: pending.discountPence,
-          shippingDiscountPence: pending.shippingDiscountPence,
-          items: { create: items },
-        },
-      });
-
-      // The only place a coupon use is counted — after payment, in the same transaction that
-      // records the order, so abandoned checkouts never use one up.
-      if (couponId) {
-        await tx.coupon.update({
-          where: { id: couponId },
-          data: { timesUsed: { increment: 1 } },
-        });
+      return { ok: true, orderId: order.id };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        const winner = await prisma.order.findUnique({ where: { paypalOrderId } });
+        if (winner) return { ok: true, orderId: winner.id };
+        if (attempt < 3) continue;
       }
-
-      for (const item of items) {
-        // updateMany (not update) so a since-deleted product is a silent no-op — stock
-        // reconciliation is best-effort and must never block recording a captured payment.
-        await tx.product.updateMany({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
-        });
-      }
-
-      return created;
-    });
-
-    return { ok: true, orderId: order.id };
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      const winner = await prisma.order.findUnique({ where: { paypalOrderId } });
-      if (winner) return { ok: true, orderId: winner.id };
+      throw error;
     }
-    throw error;
   }
 }
 

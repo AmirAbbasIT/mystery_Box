@@ -19,6 +19,7 @@ export interface OrderItemRecord {
 
 export interface OrderRecord {
   id: string;
+  orderNumber: string;
   status: OrderStatus;
   total: number;
   shipping: number;
@@ -38,6 +39,11 @@ export interface OrderRecord {
   shippingCity: string;
   shippingPostcode: string;
   shippingCountry: string;
+  carrier: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  dispatchedAt: string | null;
+  deliveredAt: string | null;
   items: OrderItemRecord[];
   createdAt: string;
 }
@@ -52,6 +58,7 @@ type OrderWithRelations = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE
 function toRecord(row: OrderWithRelations): OrderRecord {
   return {
     id: row.id,
+    orderNumber: row.orderNumber,
     status: row.status as OrderStatus,
     total: row.totalPence / 100,
     shipping: row.shippingPence / 100,
@@ -70,6 +77,11 @@ function toRecord(row: OrderWithRelations): OrderRecord {
     shippingCity: row.shippingCity,
     shippingPostcode: row.shippingPostcode,
     shippingCountry: row.shippingCountry,
+    carrier: row.carrier,
+    trackingNumber: row.trackingNumber,
+    trackingUrl: row.trackingUrl,
+    dispatchedAt: row.dispatchedAt?.toISOString() ?? null,
+    deliveredAt: row.deliveredAt?.toISOString() ?? null,
     items: row.items.map((item) => ({
       id: item.id,
       productId: item.productId,
@@ -81,8 +93,9 @@ function toRecord(row: OrderWithRelations): OrderRecord {
   };
 }
 
-export async function listOrders(): Promise<OrderRecord[]> {
+export async function listOrders(status?: OrderStatus): Promise<OrderRecord[]> {
   const rows = await getPrismaClient().order.findMany({
+    where: status ? { status } : undefined,
     include: ORDER_INCLUDE,
     orderBy: { createdAt: "desc" },
   });
@@ -97,9 +110,45 @@ export async function getOrder(id: string): Promise<OrderRecord | null> {
   return row ? toRecord(row) : null;
 }
 
-export async function updateOrderStatus(id: string, status: OrderStatus): Promise<void> {
-  await getPrismaClient().order.update({
+export interface OrderStatusUpdate {
+  status: OrderStatus;
+  /** Required when status is "dispatched"; ignored otherwise (existing details are kept). */
+  dispatch?: {
+    carrier: string;
+    trackingNumber: string | null;
+    trackingUrl: string | null;
+  };
+}
+
+/**
+ * Staff status change. Dispatch details are stored when marking dispatched; the first dispatch /
+ * delivery time is kept if staff later correct the status back and forth, so the customer's
+ * timeline doesn't jump around.
+ */
+export async function updateOrderStatus(
+  id: string,
+  update: OrderStatusUpdate,
+): Promise<void> {
+  const prisma = getPrismaClient();
+  const existing = await prisma.order.findUnique({
     where: { id },
-    data: { status, updatedAt: new Date() },
+    select: { dispatchedAt: true, deliveredAt: true },
+  });
+  if (!existing) throw new Error("Order not found.");
+
+  const now = new Date();
+  const reachedDispatch = update.status === "dispatched" || update.status === "delivered";
+
+  await prisma.order.update({
+    where: { id },
+    data: {
+      status: update.status,
+      updatedAt: now,
+      ...(update.dispatch ?? {}),
+      ...(reachedDispatch && !existing.dispatchedAt ? { dispatchedAt: now } : {}),
+      ...(update.status === "delivered" && !existing.deliveredAt
+        ? { deliveredAt: now }
+        : {}),
+    },
   });
 }

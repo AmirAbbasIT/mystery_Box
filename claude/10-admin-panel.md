@@ -325,6 +325,18 @@ checkouts never use one up. A simultaneous race for the last use can overshoot b
 reservations). Refunds don't give a use back. Unknown codes count towards a 10-per-10-minutes limit
 per visitor. Used coupons can't be deleted or renamed, only switched off.
 
+**Order tracking** (no emails yet — planned): each order gets a random customer-facing number
+(`src/lib/order-number.ts`), assigned when checkout starts and sent to PayPal as `invoice_id`, shown
+on the success page. `/track` (public) looks an order up by order number **and** checkout email —
+same "not found" message either way, rate limited (`src/lib/rate-limit.ts`, scope "track"), POSTed
+via a Server Action so the email never lands in a URL — and shows a status timeline, carrier +
+tracking link, items and total, but only the recipient's first name and postcode outward code
+(UK GDPR: no full address/contact details). Staff move orders through
+paid → packing → dispatched → delivered on `/admin/orders/[id]`; dispatching takes a carrier
+(`src/lib/carriers.ts` — tracking-URL templates to re-check if a carrier changes its site), an
+optional tracking number and an optional exact tracking link. `/admin/orders` filters by status.
+Delivered is set by hand (carrier APIs would need business contracts).
+
 **Security headers** (`next.config.ts`): site-wide CSP limiting script/frame/connect origins to self
 + PayPal, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`.
 

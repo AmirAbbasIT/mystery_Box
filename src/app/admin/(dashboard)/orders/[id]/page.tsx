@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import { getOrder } from "@/admin/services/orders.service";
+import { findCarrier } from "@/lib/carriers";
+import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 import { OrderStatusForm } from "../OrderStatusForm";
 import styles from "../orders.module.scss";
 
@@ -17,7 +19,9 @@ export default async function AdminOrderDetailPage({
 
   return (
     <div>
-      <h1 className={styles.title}>Order</h1>
+      <h1 className={styles.title}>
+        Order <span className={styles.orderNumber}>{order.orderNumber}</span>
+      </h1>
 
       <dl className={styles.detailGrid}>
         <div>
@@ -40,10 +44,40 @@ export default async function AdminOrderDetailPage({
           <dt>Status</dt>
           <dd>
             <span className={styles.statusBadge} data-status={order.status}>
-              {order.status}
+              {ORDER_STATUS_LABELS[order.status]}
             </span>
+            {order.dispatchedAt && (
+              <>
+                <br />
+                Dispatched {new Date(order.dispatchedAt).toLocaleDateString("en-GB")}
+              </>
+            )}
+            {order.deliveredAt && (
+              <>
+                <br />
+                Delivered {new Date(order.deliveredAt).toLocaleDateString("en-GB")}
+              </>
+            )}
           </dd>
         </div>
+        {order.carrier && (
+          <div>
+            <dt>Tracking</dt>
+            <dd>
+              {findCarrier(order.carrier)?.name ?? order.carrier}
+              <br />
+              {order.trackingNumber ?? "No tracking number"}
+              {order.trackingUrl && (
+                <>
+                  <br />
+                  <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer">
+                    Open tracking page
+                  </a>
+                </>
+              )}
+            </dd>
+          </div>
+        )}
         <div>
           <dt>Total</dt>
           <dd>
@@ -109,7 +143,13 @@ export default async function AdminOrderDetailPage({
         </tbody>
       </table>
 
-      <OrderStatusForm orderId={order.id} currentStatus={order.status} />
+      <OrderStatusForm
+        orderId={order.id}
+        currentStatus={order.status}
+        carrier={order.carrier}
+        trackingNumber={order.trackingNumber}
+        trackingUrl={order.trackingUrl}
+      />
     </div>
   );
 }

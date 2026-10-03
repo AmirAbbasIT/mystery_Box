@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getPrismaClient } from "@/lib/db/client";
 import { formatPrice } from "@/lib/utils";
+import Link from "next/link";
 import { Button } from "@/components/ui";
 import { ClearCartOnSuccess } from "./ClearCartOnSuccess";
 import styles from "../checkout.module.scss";
@@ -37,6 +38,14 @@ export default async function CheckoutSuccessPage({
 
       {order ? (
         <>
+          <p className={styles.orderNumber}>
+            Your order number is <strong>{order.orderNumber}</strong>
+          </p>
+          <p>
+            Keep it safe — you can check your order&rsquo;s progress any time on our{" "}
+            <Link href="/track">Track your order</Link> page with this number and your
+            email.
+          </p>
           <p>
             {order.status === "payment_pending"
               ? "PayPal is still processing your payment — we'll start packing as soon as it clears."

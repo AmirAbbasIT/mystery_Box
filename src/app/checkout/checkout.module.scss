@@ -36,3 +36,13 @@
   font-size: rem(18px);
   color: var(--color-text);
 }
+
+.orderNumber {
+  font-size: rem(18px);
+  color: var(--color-text);
+
+  strong {
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.04em;
+  }
+}

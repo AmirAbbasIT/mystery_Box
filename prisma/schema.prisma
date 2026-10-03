@@ -213,6 +213,9 @@ model SiteSettings {
 model PendingCheckout {
   id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   paypalOrderId         String   @unique @map("paypal_order_id")
+  // Assigned when checkout starts so it can be sent to PayPal as the invoice_id; null only for
+  // checkouts started before order numbers existed.
+  orderNumber           String?  @unique @map("order_number")
   items                 Json
   subtotalPence         Int      @map("subtotal_pence")
   shippingPence         Int      @map("shipping_pence")
@@ -264,15 +267,17 @@ model Coupon {
   @@map("coupons")
 }
 
-// Failed promo-code attempts, for rate limiting guessing (src/lib/coupons.server.ts). clientKey is
-// an HMAC of the visitor's IP, not the IP itself. Rows older than a day are pruned on insert.
-model CouponAttempt {
+// Failed lookups for rate limiting guessing (src/lib/rate-limit.ts) — scope "coupon" (unknown promo
+// codes) or "track" (order tracking lookups). clientKey is an HMAC of the visitor's IP, not the IP
+// itself. Rows older than a day are pruned on insert.
+model RateLimitHit {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope     String
   clientKey String   @map("client_key")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@index([clientKey, createdAt])
-  @@map("coupon_attempts")
+  @@index([scope, clientKey, createdAt])
+  @@map("rate_limit_hits")
 }
 
 // Phase 2c — checkout/orders. Guest checkout only (no accounts/login — see
@@ -292,29 +297,40 @@ model Customer {
   @@map("customers")
 }
 
+// orderNumber is the customer-facing reference (e.g. "MPG-7K3Q9X") — random, not sequential, so
+// it can't be used to guess other orders or reveal order volume. Status flow:
+// payment_pending → paid → packing → dispatched → delivered, or cancelled / refunded.
 model Order {
-  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customerId            String   @map("customer_id") @db.Uuid
-  status                String   @default("paid")
-  totalPence            Int      @map("total_pence")
-  shippingPence         Int      @default(0) @map("shipping_pence")
-  paypalOrderId         String   @unique @map("paypal_order_id")
-  paypalCaptureId       String?  @unique @map("paypal_capture_id")
-  contactPhone          String?  @map("contact_phone")
-  shippingName          String   @map("shipping_name")
-  shippingLine1         String   @map("shipping_line1")
-  shippingLine2         String?  @map("shipping_line2")
-  shippingCity          String   @map("shipping_city")
-  shippingPostcode      String   @map("shipping_postcode")
-  shippingCountry       String   @default("GB") @map("shipping_country")
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber           String    @unique @map("order_number")
+  customerId            String    @map("customer_id") @db.Uuid
+  status                String    @default("paid")
+  totalPence            Int       @map("total_pence")
+  shippingPence         Int       @default(0) @map("shipping_pence")
+  paypalOrderId         String    @unique @map("paypal_order_id")
+  paypalCaptureId       String?   @unique @map("paypal_capture_id")
+  contactPhone          String?   @map("contact_phone")
+  shippingName          String    @map("shipping_name")
+  shippingLine1         String    @map("shipping_line1")
+  shippingLine2         String?   @map("shipping_line2")
+  shippingCity          String    @map("shipping_city")
+  shippingPostcode      String    @map("shipping_postcode")
+  shippingCountry       String    @default("GB") @map("shipping_country")
   // shippingPence is shipping before any free-shipping coupon; totalPence is what was charged:
   // items + shippingPence - discountPence - shippingDiscountPence. couponCode is a snapshot.
-  couponId              String?  @map("coupon_id") @db.Uuid
-  couponCode            String?  @map("coupon_code")
-  discountPence         Int      @default(0) @map("discount_pence")
-  shippingDiscountPence Int      @default(0) @map("shipping_discount_pence")
-  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  couponId              String?   @map("coupon_id") @db.Uuid
+  couponCode            String?   @map("coupon_code")
+  discountPence         Int       @default(0) @map("discount_pence")
+  shippingDiscountPence Int       @default(0) @map("shipping_discount_pence")
+  // Set by staff on dispatch. carrier is a src/lib/carriers.ts id; trackingUrl is either built
+  // from that carrier's template or pasted by staff.
+  carrier               String?
+  trackingNumber        String?   @map("tracking_number")
+  trackingUrl           String?   @map("tracking_url")
+  dispatchedAt          DateTime? @map("dispatched_at") @db.Timestamptz(6)
+  deliveredAt           DateTime? @map("delivered_at") @db.Timestamptz(6)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   customer Customer    @relation(fields: [customerId], references: [id])
   coupon   Coupon?     @relation(fields: [couponId], references: [id], onDelete: Restrict)

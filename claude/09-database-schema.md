@@ -99,7 +99,14 @@ pending_checkouts += coupon_id (no FK), coupon_code, discount_pence, shipping_di
 coupons      (id, code unique (uppercase), note, discount_type 'percentage'|'fixed'|'free_shipping',
              percent_off, amount_off_pence, max_discount_pence, min_subtotal_pence, usage_limit,
              per_customer_limit, starts_at, ends_at, active, times_used, created_at, updated_at)
-coupon_attempts (id, client_key (HMAC of IP), created_at) — failed-code rate limiting
+rate_limit_hits (id, scope 'coupon'|'track', client_key (HMAC of IP), created_at) — failed
+             promo-code / order-tracking lookups (replaced coupon_attempts)
+orders       += order_number unique ("MPG-" + 6 random chars, no lookalikes), carrier,
+             tracking_number, tracking_url, dispatched_at, delivered_at; status now
+             payment_pending|paid|packing|dispatched|delivered|cancelled|refunded
+             ("fulfilled" migrated to "dispatched")
+pending_checkouts += order_number unique null — assigned at checkout start, sent to PayPal as
+             invoice_id, reused for the Order
 site_settings  += shipping_flat_pence int default 0, free_shipping_threshold_pence int null
 ```
 

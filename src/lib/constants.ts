@@ -20,6 +20,7 @@ export const NAV_LINKS: NavLink[] = [
 ];
 
 export const FOOTER_LINKS: NavLink[] = [
+  { label: "Track your order", href: "/track" },
   { label: "About & Contact", href: "/about" },
   { label: "Legal Notice", href: "/legal-notice" },
 ];
