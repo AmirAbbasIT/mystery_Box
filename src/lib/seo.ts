@@ -26,7 +26,7 @@ export function absoluteUrl(path: string): string {
 }
 
 interface PageMetadataInput {
-  /** Becomes "<title> | Mystery Packed Gifts" via the root layout's title template. */
+  /** Becomes "<title> | Mystery Picked Gifts" via the root layout's title template. */
   title?: string;
   description: string;
   /** Site-relative path of this page, e.g. "/shop/halloween". */

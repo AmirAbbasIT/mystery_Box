@@ -18,8 +18,8 @@ export function Hero() {
           <span className={styles.eyebrow}>UK mystery gifting, made for the reveal</span>
           <h1 className={styles.title}>Every box is a moment worth unboxing.</h1>
           <p className={styles.subtitle}>
-            Mystery gift boxes for birthdays, weddings and every season, plus pink eggs and a wheel
-            spin — pick your occasion, pick your thrill.
+            Mystery gift boxes for birthdays, weddings and every season, plus pink eggs
+            and a wheel spin — pick your occasion, pick your thrill.
           </p>
           <div className={styles.ctas}>
             <Button href="/shop" size="lg">
@@ -38,7 +38,7 @@ export function Hero() {
           transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1], delay: 0.1 }}
         >
           <Image
-            src="/images/brand/hero-gift.svg"
+            src="/images/brand/hero-gift-anim-2.svg"
             alt="A wrapped mystery gift box"
             width={420}
             height={420}

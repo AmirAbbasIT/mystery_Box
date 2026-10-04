@@ -20,7 +20,7 @@ export interface EmailMessage {
 
 /** What a provider adapter receives: the message plus the configured sender details. */
 export interface OutgoingEmail extends EmailMessage {
-  /** e.g. "Mystery Packed Gifts <orders@example.co.uk>" */
+  /** e.g. "Mystery Picked Gifts <orders@example.co.uk>" */
   from: string;
   replyTo?: string;
 }

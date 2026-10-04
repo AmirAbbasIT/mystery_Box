@@ -4,7 +4,7 @@ import styles from "./page.module.scss";
 
 export const metadata: Metadata = pageMetadata({
   title: "Legal Notice",
-  description: "Company information and legal notices for Mystery Packed Gifts.",
+  description: "Company information and legal notices for Mystery Picked Gifts.",
   path: "/legal-notice",
 });
 

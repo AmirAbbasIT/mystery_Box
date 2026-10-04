@@ -11,7 +11,7 @@ export interface ShopDetails {
   /** Geographic business address — also legally required; a PO box alone isn't enough. */
   address: string;
   contactEmail: string;
-  /** Absolute origin for links, e.g. "https://mysterypackedgifts.co.uk" (no trailing slash). */
+  /** Absolute origin for links, e.g. "https://mysterypickedgifts.co.uk" (no trailing slash). */
   siteUrl: string;
 }
 

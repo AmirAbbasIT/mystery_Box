@@ -6,7 +6,7 @@ import styles from "./page.module.scss";
 export const metadata: Metadata = pageMetadata({
   title: "Track your order",
   description:
-    "Check the status of your Mystery Packed Gifts order and follow your parcel with your order number.",
+    "Check the status of your Mystery Picked Gifts order and follow your parcel with your order number.",
   path: "/track",
 });
 

@@ -26,12 +26,12 @@ const bodyFont = Nunito_Sans({
 // never here, or every page without its own would inherit the home page's canonical.
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  applicationName: "Mystery Packed Gifts",
-  openGraph: { type: "website", siteName: "Mystery Packed Gifts", locale: "en_GB" },
+  applicationName: "Mystery Picked Gifts",
+  openGraph: { type: "website", siteName: "Mystery Picked Gifts", locale: "en_GB" },
   twitter: { card: "summary_large_image" },
   title: {
-    default: "Mystery Packed Gifts | Mystery Gift Boxes for Every Occasion",
-    template: "%s | Mystery Packed Gifts",
+    default: "Mystery Picked Gifts | Mystery Gift Boxes for Every Occasion",
+    template: "%s | Mystery Picked Gifts",
   },
   description:
     "UK mystery gift boxes for birthdays, weddings, Halloween, Christmas and Valentine's — plus mystery eggs, wheel spins, birthday packages and custom gift requests.",

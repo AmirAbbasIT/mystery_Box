@@ -8,7 +8,7 @@ import styles from "../checkout.module.scss";
 
 export const metadata: Metadata = {
   title: "Order Confirmed",
-  description: "Your Mystery Packed Gifts order is confirmed.",
+  description: "Your Mystery Picked Gifts order is confirmed.",
   robots: { index: false, follow: false },
 };
 

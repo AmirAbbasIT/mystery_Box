@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
   return pageMetadata({
     title: `${name} Mystery Gift Boxes`,
-    description: `${category.tagline} — ${name.toLowerCase()} mystery gift boxes from Mystery Packed Gifts, hand-packed and delivered across the UK.`,
+    description: `${category.tagline} — ${name.toLowerCase()} mystery gift boxes from Mystery Picked Gifts, hand-packed and delivered across the UK.`,
     path: `/shop/${category.slug}`,
     // Nothing on sale = thin page; it's also left out of the sitemap until products return.
     noIndex: category.priceFrom === null,

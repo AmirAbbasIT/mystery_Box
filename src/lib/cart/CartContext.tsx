@@ -10,7 +10,9 @@ import {
 } from "react";
 import type { CartItem } from "@/types/cart";
 
-const STORAGE_KEY = "mystery-packed-gifts-basket";
+const STORAGE_KEY = "mystery-picked-gifts-basket";
+/** Key used before the "Mystery Picked Gifts" rename — read once so existing baskets survive. */
+const LEGACY_STORAGE_KEY = "mystery-packed-gifts-basket";
 
 type CartAction =
   | { type: "add"; item: Omit<CartItem, "quantity">; quantity: number }
@@ -91,7 +93,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let saved: CartItem[] = [];
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw =
+        window.localStorage.getItem(STORAGE_KEY) ??
+        window.localStorage.getItem(LEGACY_STORAGE_KEY);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
       if (Array.isArray(parsed)) saved = parsed;
     } catch {
