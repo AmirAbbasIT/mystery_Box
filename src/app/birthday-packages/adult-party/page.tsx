@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getBirthdayPackages } from "@/lib/catalogue";
 import { Button } from "@/components/ui";
 import { PackageCard } from "../PackageCard";
@@ -6,10 +7,12 @@ import styles from "../page.module.scss";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Adult Party Packages",
-  description: "Hen dos, milestone birthdays and build-your-own adult party boxes.",
-};
+  description:
+    "Milestone birthday and adult party mystery boxes — hand-packed surprise gifts delivered across the UK.",
+  path: "/birthday-packages/adult-party",
+});
 
 export default async function AdultPartyPage() {
   const birthdayPackages = await getBirthdayPackages();
@@ -19,7 +22,9 @@ export default async function AdultPartyPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>Adult Party Packages</h1>
-        <p>Hen dos, milestone birthdays and girls&rsquo; nights — build the box together.</p>
+        <p>
+          Hen dos, milestone birthdays and girls&rsquo; nights — build the box together.
+        </p>
       </header>
 
       <div className={styles.grid}>
@@ -30,7 +35,10 @@ export default async function AdultPartyPage() {
 
       <section className={styles.customSection}>
         <h2>Want something custom?</h2>
-        <p>Tell us the occasion and budget — we&rsquo;ll put together a quote for a mystery box packed just for them.</p>
+        <p>
+          Tell us the occasion and budget — we&rsquo;ll put together a quote for a mystery
+          box packed just for them.
+        </p>
         <Button href="/custom-request">Make a Custom Request</Button>
       </section>
     </div>

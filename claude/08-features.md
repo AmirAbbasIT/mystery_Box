@@ -103,3 +103,22 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
 - **Themes** are original/non-licensed by design (see [[01-overview]]) — this is not a TODO to
   "fix", just a documented decision; don't reintroduce trademarked character names without a
   license.
+
+## SEO
+
+- **`src/lib/seo.ts`** is the single source: `getSiteUrl()` (`SITE_URL`, falling back to Vercel's
+  production domain), `pageMetadata()` for every public page (title, description, **per-page
+  canonical**, Open Graph/Twitter incl. the share image), and JSON-LD builders. Canonicals are
+  never set in the root layout — children would inherit the home page's canonical.
+- **`app/robots.ts`** disallows `/admin` and `/api/`. Basket/checkout are *not* disallowed on
+  purpose: they carry `noindex`, which crawlers can only see if allowed to fetch the page.
+- **Admin** is kept out three ways: robots.txt, `noindex,nofollow` metadata in
+  `app/admin/layout.tsx` (covers login), and an `X-Robots-Tag` header for `/admin*` and `/api*`
+  (`next.config.ts`).
+- **`app/sitemap.ts`** lists static public pages plus categories with active products (from the
+  DB, revalidated hourly). Empty categories are omitted and their pages are `noindex`.
+- **Structured data** (`components/seo/JsonLd.tsx`, `<` escaped): `OnlineStore` + `WebSite` on the
+  home page (address omitted until `BUSINESS_ADDRESS` is real), `BreadcrumbList` + `ItemList` of
+  `Product`/`Offer` on category pages.
+- Category titles are title-cased + "Mystery Gift Boxes"; product images fall back to the product
+  name when the admin alt text is empty.

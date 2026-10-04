@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getCategories, getProducts, getThemes } from "@/lib/catalogue";
 import { CategoryCard, ProductGrid } from "@/components/product";
 import styles from "./page.module.scss";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Shop Mystery Boxes",
   description:
-    "Mystery gift boxes for birthdays, weddings and the seasons — pick an occasion and a theme.",
-};
+    "Shop mystery gift boxes for birthdays, weddings, Halloween, Christmas and Valentine's — hand-packed and delivered across the UK.",
+  path: "/shop",
+});
 
 export default async function ShopIndexPage() {
   const [categories, products, themes] = await Promise.all([
@@ -23,7 +25,9 @@ export default async function ShopIndexPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>Shop Mystery Boxes</h1>
-        <p>A mystery box for every occasion — pick yours and let the reveal do the rest.</p>
+        <p>
+          A mystery box for every occasion — pick yours and let the reveal do the rest.
+        </p>
       </header>
 
       <section className={styles.categories} aria-label="Categories">

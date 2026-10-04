@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { getPrismaClient } from "@/lib/db/client";
 import { sendEmail } from "@/lib/email";
 import { findCarrier } from "@/lib/carriers";
+import { getSiteUrl } from "@/lib/seo";
 import {
   BUSINESS_ADDRESS,
   BUSINESS_LEGAL_NAME,
@@ -44,7 +45,7 @@ function shopDetails(): ShopDetails {
     legalName: BUSINESS_LEGAL_NAME,
     address: BUSINESS_ADDRESS,
     contactEmail: process.env.EMAIL_REPLY_TO || CONTACT_EMAIL,
-    siteUrl: (process.env.SITE_URL ?? "http://localhost:3000").replace(/\/+$/, ""),
+    siteUrl: getSiteUrl(),
   };
 }
 

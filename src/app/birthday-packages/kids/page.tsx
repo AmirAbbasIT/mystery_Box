@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getBirthdayPackages } from "@/lib/catalogue";
 import { Button } from "@/components/ui";
 import { PackageCard } from "../PackageCard";
@@ -6,10 +7,12 @@ import styles from "../page.module.scss";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Kids Birthday Packages",
-  description: "Party favours and milestone birthday boxes for kids.",
-};
+  description:
+    "Kids birthday party boxes and milestone birthday mystery gifts, hand-packed and delivered across the UK.",
+  path: "/birthday-packages/kids",
+});
 
 export default async function KidsBirthdayPage() {
   const birthdayPackages = await getBirthdayPackages();
@@ -30,7 +33,10 @@ export default async function KidsBirthdayPage() {
 
       <section className={styles.customSection}>
         <h2>Want something custom?</h2>
-        <p>Tell us the occasion, age and budget — we&rsquo;ll put together a quote for a mystery box packed just for them.</p>
+        <p>
+          Tell us the occasion, age and budget — we&rsquo;ll put together a quote for a
+          mystery box packed just for them.
+        </p>
         <Button href="/custom-request">Make a Custom Request</Button>
       </section>
     </div>

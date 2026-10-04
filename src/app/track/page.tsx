@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { TrackOrderView } from "./TrackOrderView";
 import styles from "./page.module.scss";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Track your order",
   description:
-    "Check the status of your Mystery Packed Gifts order and follow your parcel.",
-};
+    "Check the status of your Mystery Packed Gifts order and follow your parcel with your order number.",
+  path: "/track",
+});
 
 export default function TrackOrderPage() {
   return (

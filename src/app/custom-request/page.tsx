@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { CustomRequestForm } from "@/components/forms";
 import styles from "./page.module.scss";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Custom Request",
-  description: "Request a custom-packed mystery gift box — tell us who it's for, the occasion, and your budget.",
-};
+  description:
+    "Request a custom-packed mystery gift box — tell us who it's for, the occasion and your budget, and we'll build it.",
+  path: "/custom-request",
+});
 
 export default function CustomRequestPage() {
   return (
@@ -13,8 +16,9 @@ export default function CustomRequestPage() {
       <header className={styles.header}>
         <h1>Custom Request</h1>
         <p>
-          Want a mystery box packed just for someone? Tell us who it&rsquo;s for, the occasion, any
-          theme preference and your budget — we&rsquo;ll put together a quote.
+          Want a mystery box packed just for someone? Tell us who it&rsquo;s for, the
+          occasion, any theme preference and your budget — we&rsquo;ll put together a
+          quote.
         </p>
       </header>
 

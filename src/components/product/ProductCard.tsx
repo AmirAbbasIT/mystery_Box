@@ -44,7 +44,7 @@ export function ProductCard({ product, themes }: ProductCardProps) {
         {image ? (
           <Image
             src={image.src}
-            alt={image.alt}
+            alt={image.alt || product.name}
             fill
             sizes="(max-width: 600px) 100vw, (max-width: 1024px) 50vw, 25vw"
             className={styles.image}
@@ -99,7 +99,9 @@ export function ProductCard({ product, themes }: ProductCardProps) {
           onClick={handleAddToBasket}
           disabled={product.stock <= 0}
         >
-          {product.stock <= 0 ? "Out of Stock" : `Add to Basket — ${formatPrice(product.price)}`}
+          {product.stock <= 0
+            ? "Out of Stock"
+            : `Add to Basket — ${formatPrice(product.price)}`}
         </Button>
       </Modal>
     </motion.article>

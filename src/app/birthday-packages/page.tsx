@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getBirthdayPackages } from "@/lib/catalogue";
 import { Button } from "@/components/ui";
 import { PackageCard } from "./PackageCard";
@@ -6,11 +7,12 @@ import styles from "./page.module.scss";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Birthday Packages",
   description:
-    "Kids party favours to adult milestone birthday boxes — or request something custom.",
-};
+    "Birthday mystery boxes for kids and adults — party boxes, milestone gifts, or request something custom. UK delivery.",
+  path: "/birthday-packages",
+});
 
 export default async function BirthdayPackagesPage() {
   const birthdayPackages = await getBirthdayPackages();

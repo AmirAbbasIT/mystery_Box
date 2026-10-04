@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import { TrustSignals } from "@/components/home";
 import { ContactForm } from "@/components/forms";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import styles from "./page.module.scss";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "About & Contact",
   description:
-    "The story behind Mystery Packed Gifts — a small, family-run mystery gifting brand — plus how to get in touch.",
-};
+    "Meet the small, family-run UK team behind Mystery Packed Gifts — hand-packed mystery gift boxes — and find out how to get in touch.",
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (
@@ -31,18 +33,19 @@ export default function AboutPage() {
           </div>
           <div className={styles.story}>
             <p>
-              We started Mystery Packed Gifts because we love the reveal moment as much as our
-              customers do — that split-second where you don&rsquo;t know what you&rsquo;re
-              getting, and then you do.
+              We started Mystery Packed Gifts because we love the reveal moment as much as
+              our customers do — that split-second where you don&rsquo;t know what
+              you&rsquo;re getting, and then you do.
             </p>
             <p>
-              We&rsquo;re a small, family-run team based in the UK. Every box, egg and wheel spin
-              prize is hand-picked and packed by us — not a warehouse algorithm.
+              We&rsquo;re a small, family-run team based in the UK. Every box, egg and
+              wheel spin prize is hand-picked and packed by us — not a warehouse
+              algorithm.
             </p>
             <p>
-              Whether you&rsquo;re treating yourself, filling party bags, or building a custom box
-              for someone&rsquo;s big day, we want every order to feel like a little bit of
-              theatre.
+              Whether you&rsquo;re treating yourself, filling party bags, or building a
+              custom box for someone&rsquo;s big day, we want every order to feel like a
+              little bit of theatre.
             </p>
           </div>
         </div>
@@ -54,8 +57,8 @@ export default function AboutPage() {
         <header className={styles.header}>
           <h2>Get in Touch</h2>
           <p>
-            Questions about an order, a custom request, or just want to say hi? We&rsquo;d love to
-            hear from you.
+            Questions about an order, a custom request, or just want to say hi? We&rsquo;d
+            love to hear from you.
           </p>
         </header>
 

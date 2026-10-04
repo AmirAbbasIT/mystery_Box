@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import { getSeasonalCollections } from "@/lib/catalogue";
 import styles from "./page.module.scss";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Seasonal & Limited Edition",
-  description: "Seasonal and occasion mystery box collections — Halloween, Christmas, Valentine's and more.",
-};
+  description:
+    "Seasonal mystery gift boxes for Halloween, Christmas, Valentine's and more — limited-edition drops with UK delivery.",
+  path: "/seasonal",
+});
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",

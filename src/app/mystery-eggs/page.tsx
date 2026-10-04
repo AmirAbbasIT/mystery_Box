@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getEggPrizePools } from "@/lib/catalogue";
 import { Accordion, AccordionItem } from "@/components/ui";
 import { EggTierSelector } from "./EggTierSelector";
@@ -6,10 +7,12 @@ import styles from "./page.module.scss";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Mystery Pink Eggs",
-  description: "Crack open mystery pink eggs — choose a pack size and see what could be inside.",
-};
+  description:
+    "Crack open mystery pink eggs — choose a pack size, see every possible prize, and try a free preview.",
+  path: "/mystery-eggs",
+});
 
 export default async function MysteryEggsPage() {
   const eggTiers = await getEggPrizePools();
@@ -34,8 +37,8 @@ export default async function MysteryEggsPage() {
       <header className={styles.header}>
         <h1>Mystery Pink Eggs</h1>
         <p>
-          Pick a pack and try a free preview crack below — it&rsquo;s just for fun and uses the
-          prize list shown underneath.
+          Pick a pack and try a free preview crack below — it&rsquo;s just for fun and
+          uses the prize list shown underneath.
         </p>
       </header>
 

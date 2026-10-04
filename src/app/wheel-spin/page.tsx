@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getWheelPrizePool } from "@/lib/catalogue";
 import { WheelSpinLoader } from "@/components/animations";
 import { PriceTag } from "@/components/product";
@@ -9,11 +10,12 @@ export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
   const wheelPool = await getWheelPrizePool();
-  if (!wheelPool) return { title: "Wheel Spin" };
-  return {
-    title: wheelPool.name,
-    description: "Spin the wheel for a prize — see every prize and its odds up front.",
-  };
+  return pageMetadata({
+    title: wheelPool?.name ?? "Wheel Spin",
+    description:
+      "Spin the mystery prize wheel — every spin wins a prize, with every prize and its odds shown up front. UK delivery.",
+    path: "/wheel-spin",
+  });
 }
 
 export default async function WheelSpinPage() {
