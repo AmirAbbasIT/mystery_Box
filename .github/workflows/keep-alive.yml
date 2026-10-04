@@ -1,0 +1,38 @@
+# Backup keep-alive for the free-tier Supabase project, independent of Vercel's cron (which is
+# the primary — see vercel.json). Calls the same endpoint daily at a different time of day.
+#
+# Setup (GitHub repo → Settings → Secrets and variables → Actions → New repository secret):
+#   KEEP_ALIVE_URL  e.g. https://yourdomain.co.uk/api/cron/keep-alive
+#   CRON_SECRET     same value as CRON_SECRET in Vercel's environment variables
+# Until KEEP_ALIVE_URL is set the job exits successfully without doing anything.
+#
+# GitHub pauses scheduled workflows after 60 days with no commits to the repo — re-enable it from
+# the Actions tab if that happens. "Run workflow" on that tab also triggers it by hand.
+
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: "37 16 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping keep-alive endpoint
+        env:
+          KEEP_ALIVE_URL: ${{ secrets.KEEP_ALIVE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$KEEP_ALIVE_URL" ]; then
+            echo "KEEP_ALIVE_URL secret not set — skipping."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            --retry 3 --retry-delay 20 --retry-all-errors \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "$KEEP_ALIVE_URL"
