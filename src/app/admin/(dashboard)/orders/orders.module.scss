@@ -201,3 +201,55 @@
     max-width: 320px;
   }
 }
+
+.emailsPanel {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+
+  h2 {
+    font-family: var(--font-family-display);
+    font-size: rem(18px);
+    margin-bottom: var(--space-3);
+  }
+}
+
+.emailLog {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: rem(14px);
+}
+
+.resendRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.resendForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: rem(13px);
+}
+
+.resendButton {
+  @include focus-visible;
+
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-secondary);
+  background: none;
+  color: var(--color-secondary);
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

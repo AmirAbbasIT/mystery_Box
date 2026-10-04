@@ -4,6 +4,12 @@ export const SITE_TAGLINE = "Surprise gift boxes, eggs & wheel spin prizes";
 // TODO: replace with the real inbox before launch.
 export const CONTACT_EMAIL = "hello@mysteryboxuk.example";
 
+// TODO: fill in before launch — order confirmation emails must show the trader's legal name and
+// geographic address (Consumer Contracts Regulations 2013). Sole trader: your own name trading as
+// the shop name; limited company: the registered company name.
+export const BUSINESS_LEGAL_NAME = "Mystery Packed Gifts";
+export const BUSINESS_ADDRESS = "[Business address — set in src/lib/constants.ts]";
+
 export interface NavLink {
   label: string;
   href: string;

@@ -10,6 +10,7 @@ import {
   startPayPalCheckout,
   type CheckoutResult,
 } from "@/lib/orders";
+import { queueOrderEmail } from "@/lib/order-emails";
 
 const NOT_VALID = "This code isn't valid.";
 
@@ -119,7 +120,9 @@ export async function capturePayPalOrderAction(
     return { ok: false, error: "Invalid payment reference." };
 
   try {
-    return await completePayPalCheckout(paypalOrderId);
+    const result = await completePayPalCheckout(paypalOrderId);
+    if (result.ok && result.newlyPaid) queueOrderEmail(result.orderId, "confirmation");
+    return result;
   } catch (error) {
     console.error(`PayPal capture failed for ${paypalOrderId}`, error);
     return {

@@ -105,6 +105,8 @@ orders       += order_number unique ("MPG-" + 6 random chars, no lookalikes), ca
              tracking_number, tracking_url, dispatched_at, delivered_at; status now
              payment_pending|paid|packing|dispatched|delivered|cancelled|refunded
              ("fulfilled" migrated to "dispatched")
+order_emails (id, order_id fk→orders cascade, kind 'confirmation'|'dispatched'|'delivered',
+             status 'sent'|'failed', provider, provider_message_id, error, created_at) — send log
 pending_checkouts += order_number unique null — assigned at checkout start, sent to PayPal as
              invoice_id, reused for the Order
 site_settings  += shipping_flat_pence int default 0, free_shipping_threshold_pence int null

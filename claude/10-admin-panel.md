@@ -337,6 +337,21 @@ paid → packing → dispatched → delivered on `/admin/orders/[id]`; dispatchi
 optional tracking number and an optional exact tracking link. `/admin/orders` filters by status.
 Delivered is set by hand (carrier APIs would need business contracts).
 
+**Customer emails** — layered so the provider is swappable by config alone:
+`src/lib/email/` is provider-neutral (`EmailProvider` interface in `types.ts`, adapters in
+`providers/` — `resend.ts` over plain fetch, `console.ts` for local dev — chosen by
+`EMAIL_PROVIDER` in `index.ts`'s `getEmailProvider()`; templates in `templates/` are pure
+functions of plain data with all values HTML-escaped). `src/lib/order-emails.ts` is the only
+order-aware piece: loads the order, renders, sends via `sendEmail()`, logs to `order_emails`, and
+never throws. Triggers: confirmation when an order is first recorded as paid (`newlyPaid` from
+`completePayPalCheckout`, or a pending capture settling via webhook); dispatched/delivered when
+staff change the status (not on re-save). All automatic sends run via `after()` so they don't slow
+responses, skip kinds already sent, and pass an idempotency key so retries can't duplicate.
+Admin order page lists the log and has Resend buttons (forced, fresh key). The confirmation is the
+Consumer Contracts Regs "durable medium" confirmation — trader name/address come from
+`BUSINESS_LEGAL_NAME`/`BUSINESS_ADDRESS` in `src/lib/constants.ts` (placeholders until launch).
+To swap provider: add `providers/<name>.ts` implementing `EmailProvider`, add a case, change env.
+
 **Security headers** (`next.config.ts`): site-wide CSP limiting script/frame/connect origins to self
 + PayPal, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`.
 

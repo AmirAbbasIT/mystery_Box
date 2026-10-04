@@ -128,11 +128,11 @@ export interface OrderStatusUpdate {
 export async function updateOrderStatus(
   id: string,
   update: OrderStatusUpdate,
-): Promise<void> {
+): Promise<{ previousStatus: OrderStatus }> {
   const prisma = getPrismaClient();
   const existing = await prisma.order.findUnique({
     where: { id },
-    select: { dispatchedAt: true, deliveredAt: true },
+    select: { status: true, dispatchedAt: true, deliveredAt: true },
   });
   if (!existing) throw new Error("Order not found.");
 
@@ -151,4 +151,29 @@ export async function updateOrderStatus(
         : {}),
     },
   });
+  return { previousStatus: existing.status as OrderStatus };
+}
+
+export interface OrderEmailRecord {
+  id: string;
+  kind: string;
+  status: string;
+  provider: string;
+  error: string | null;
+  createdAt: string;
+}
+
+export async function listOrderEmails(orderId: string): Promise<OrderEmailRecord[]> {
+  const rows = await getPrismaClient().orderEmail.findMany({
+    where: { orderId },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    status: row.status,
+    provider: row.provider,
+    error: row.error,
+    createdAt: row.createdAt.toISOString(),
+  }));
 }

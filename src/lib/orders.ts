@@ -233,6 +233,16 @@ function amountMatches(
   return money?.currency_code === "GBP" && valueToPence(money.value) === pence;
 }
 
+export interface CompletedCheckout {
+  orderId: string;
+  /**
+   * True only for the one call that recorded this order as paid — the cue to send the
+   * confirmation email. False for duplicates (browser + webhook racing) and for captures still
+   * pending at PayPal (those get their confirmation when the webhook settles them).
+   */
+  newlyPaid: boolean;
+}
+
 /**
  * Captures an approved PayPal order and records it as an Order. Safe to call more than once for
  * the same order, from the browser's onApprove and from the webhook concurrently: capture is
@@ -240,14 +250,14 @@ function amountMatches(
  */
 export async function completePayPalCheckout(
   paypalOrderId: string,
-): Promise<CheckoutResult<{ orderId: string }>> {
+): Promise<CheckoutResult<CompletedCheckout>> {
   if (!PAYPAL_ORDER_ID_PATTERN.test(paypalOrderId)) {
     return { ok: false, error: "Invalid payment reference." };
   }
 
   const prisma = getPrismaClient();
   const existing = await prisma.order.findUnique({ where: { paypalOrderId } });
-  if (existing) return { ok: true, orderId: existing.id };
+  if (existing) return { ok: true, orderId: existing.id, newlyPaid: false };
 
   const pending = await prisma.pendingCheckout.findUnique({ where: { paypalOrderId } });
   if (!pending)
@@ -432,14 +442,14 @@ export async function completePayPalCheckout(
         return created;
       });
 
-      return { ok: true, orderId: order.id };
+      return { ok: true, orderId: order.id, newlyPaid: order.status === "paid" };
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
         const winner = await prisma.order.findUnique({ where: { paypalOrderId } });
-        if (winner) return { ok: true, orderId: winner.id };
+        if (winner) return { ok: true, orderId: winner.id, newlyPaid: false };
         if (attempt < 3) continue;
       }
       throw error;
@@ -449,16 +459,25 @@ export async function completePayPalCheckout(
 
 export type CaptureStatusUpdate = "paid" | "cancelled" | "refunded";
 
-/** Webhook-driven status changes for an already-recorded capture (settled, denied, refunded). */
+/**
+ * Webhook-driven status changes for an already-recorded capture (settled, denied, refunded).
+ * Returns the order's id, if one exists for this capture.
+ */
 export async function updateOrderByCaptureId(
   captureId: string,
   status: CaptureStatusUpdate,
-): Promise<void> {
-  await getPrismaClient().order.updateMany({
+): Promise<string | null> {
+  const prisma = getPrismaClient();
+  await prisma.order.updateMany({
     where: {
       paypalCaptureId: captureId,
       ...(status === "paid" ? { status: "payment_pending" } : {}),
     },
     data: { status, updatedAt: new Date() },
   });
+  const order = await prisma.order.findUnique({
+    where: { paypalCaptureId: captureId },
+    select: { id: true },
+  });
+  return order?.id ?? null;
 }

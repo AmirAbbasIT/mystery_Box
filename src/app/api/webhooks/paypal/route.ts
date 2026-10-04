@@ -1,5 +1,6 @@
 import { verifyPayPalWebhook } from "@/lib/paypal";
 import { completePayPalCheckout, updateOrderByCaptureId } from "@/lib/orders";
+import { queueOrderEmail } from "@/lib/order-emails";
 
 interface PayPalWebhookEvent {
   event_type: string;
@@ -44,13 +45,21 @@ export async function POST(request: Request): Promise<Response> {
     switch (event.event_type) {
       case "CHECKOUT.ORDER.APPROVED": {
         const result = await completePayPalCheckout(event.resource.id);
-        if (!result.ok) console.warn(`Webhook could not complete ${event.resource.id}: ${result.error}`);
+        if (result.ok && result.newlyPaid)
+          queueOrderEmail(result.orderId, "confirmation");
+        if (!result.ok)
+          console.warn(
+            `Webhook could not complete ${event.resource.id}: ${result.error}`,
+          );
         break;
       }
       case "PAYMENT.CAPTURE.COMPLETED": {
         const orderId = event.resource.supplementary_data?.related_ids?.order_id;
         if (orderId) await completePayPalCheckout(orderId);
-        await updateOrderByCaptureId(event.resource.id, "paid");
+        // Covers captures that were pending and have now settled; already-confirmed orders are
+        // skipped by sendOrderEmail.
+        const settledOrderId = await updateOrderByCaptureId(event.resource.id, "paid");
+        if (settledOrderId) queueOrderEmail(settledOrderId, "confirmation");
         break;
       }
       case "PAYMENT.CAPTURE.DENIED":

@@ -332,13 +332,34 @@ model Order {
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  customer Customer    @relation(fields: [customerId], references: [id])
-  coupon   Coupon?     @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  customer Customer     @relation(fields: [customerId], references: [id])
+  coupon   Coupon?      @relation(fields: [couponId], references: [id], onDelete: Restrict)
   items    OrderItem[]
+  emails   OrderEmail[]
 
   @@index([customerId])
   @@index([couponId])
   @@map("orders")
+}
+
+// One row per customer email send attempt (src/lib/order-emails.ts). kind: "confirmation" |
+// "dispatched" | "delivered"; status: "sent" | "failed". provider records which email service sent
+// it, so the log stays meaningful after swapping providers. Automatic sends skip a kind that was
+// already sent; staff can resend from the admin order page.
+model OrderEmail {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId           String   @map("order_id") @db.Uuid
+  kind              String
+  status            String
+  provider          String
+  providerMessageId String?  @map("provider_message_id")
+  error             String?
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_emails")
 }
 
 // productId is nullable + onDelete: SetNull deliberately — productName/unitPricePence are a

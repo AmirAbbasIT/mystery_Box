@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
-import { getOrder } from "@/admin/services/orders.service";
+import { getOrder, listOrderEmails } from "@/admin/services/orders.service";
+import type { OrderEmailKind } from "@/lib/order-emails";
 import { findCarrier } from "@/lib/carriers";
 import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 import { OrderStatusForm } from "../OrderStatusForm";
+import { OrderEmailsPanel } from "../OrderEmailsPanel";
 import styles from "../orders.module.scss";
 
 export default async function AdminOrderDetailPage({
@@ -13,7 +15,7 @@ export default async function AdminOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = await getOrder(id);
+  const [order, emails] = await Promise.all([getOrder(id), listOrderEmails(id)]);
 
   if (!order) notFound();
 
@@ -149,6 +151,18 @@ export default async function AdminOrderDetailPage({
         carrier={order.carrier}
         trackingNumber={order.trackingNumber}
         trackingUrl={order.trackingUrl}
+      />
+
+      <OrderEmailsPanel
+        orderId={order.id}
+        emails={emails}
+        resendable={(
+          [
+            "confirmation",
+            order.carrier ? "dispatched" : null,
+            order.status === "delivered" ? "delivered" : null,
+          ] satisfies Array<OrderEmailKind | null>
+        ).filter((kind): kind is OrderEmailKind => kind !== null)}
       />
     </div>
   );
