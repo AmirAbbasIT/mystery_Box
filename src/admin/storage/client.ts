@@ -5,7 +5,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 /**
  * Server-only Supabase client, scoped to Storage only — Prisma (src/lib/db/client.ts) owns all
  * Postgres queries. Reintroducing @supabase/supabase-js just for this is the narrow, justified use
- * documented in claude/09-database-schema.md's image-storage note: object storage needs an actual
+ * documented in .claude/docs/09-database-schema.md's image-storage note: object storage needs an actual
  * CDN-backed store, not a database column, and Supabase Storage is already provisioned on the same
  * project at no extra cost.
  */

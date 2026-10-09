@@ -5,7 +5,7 @@ import type { OrderStatus } from "@/types/order";
 
 /**
  * Read/status-update only — there is no createOrder/deleteOrder here on purpose. Orders are only
- * ever created by src/lib/orders.ts (PayPal checkout), matching claude/10-admin-panel.md's
+ * ever created by src/lib/orders.ts (PayPal checkout), matching .claude/docs/10-admin-panel.md's
  * Phase 2c scope: "no new business logic beyond what checkout already needs to write."
  */
 

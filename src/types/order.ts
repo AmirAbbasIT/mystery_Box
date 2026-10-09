@@ -1,6 +1,6 @@
 // Phase 2c — checkout is live (guest checkout via PayPal, no accounts). Orders are only ever
 // created once PayPal has captured the payment (src/lib/orders.ts), never optimistically — see
-// claude/10-admin-panel.md. payment_pending = PayPal accepted the capture but hasn't settled it
+// .claude/docs/10-admin-panel.md. payment_pending = PayPal accepted the capture but hasn't settled it
 // yet (flips to paid via webhook); refunded is set by the refund/chargeback webhooks.
 
 export type OrderStatus =

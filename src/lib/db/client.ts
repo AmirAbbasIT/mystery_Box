@@ -6,9 +6,9 @@ import { PrismaClient } from "@/generated/prisma/client";
  * Server-only Prisma client, singleton across warm serverless invocations. Shared by
  * src/admin/services/*.ts (writes) and src/lib/catalogue.ts (storefront reads) — deliberately
  * lives outside src/admin/ so the storefront doesn't depend on admin-specific code, keeping
- * src/admin/ easy to extract later if that's ever justified (see claude/10-admin-panel.md).
+ * src/admin/ easy to extract later if that's ever justified (see .claude/docs/10-admin-panel.md).
  * Prisma 7 requires an explicit driver adapter (no more reading a connection URL out of
- * schema.prisma) — see claude/09-database-schema.md. Uses DATABASE_URL (the pooled/Supavisor
+ * schema.prisma) — see .claude/docs/09-database-schema.md. Uses DATABASE_URL (the pooled/Supavisor
  * connection), not DIRECT_URL (that's for prisma.config.ts's CLI/migration commands only).
  *
  * getPrismaClient() is deliberately lazy — constructing eagerly at module scope makes Next.js's

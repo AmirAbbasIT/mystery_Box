@@ -1,4 +1,4 @@
-// Selectable colour palette overrides — the mechanism claude/04-design-system.md already
+// Selectable colour palette overrides — the mechanism .claude/docs/04-design-system.md already
 // anticipated ("adding a theme toggle later means swapping the values inside a
 // `:root[data-theme="dark"]` block — not touching a single component"). Deliberately plain
 // attribute selectors, not `:root`-scoped — that lets the exact same rule apply site-wide (on

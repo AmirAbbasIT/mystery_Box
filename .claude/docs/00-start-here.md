@@ -1,6 +1,6 @@
 # Start Here
 
-This `claude/` folder (not `.claude/`, the tool config dir) is the project's living design memory —
+This `.claude/docs/` folder (inside `.claude/`, alongside the Claude Code config) is the project's living design memory —
 the "why" behind decisions that aren't recoverable by reading the code alone. Read the relevant
 doc before touching an area of the codebase; update the doc in the same change if you alter the
 decision it records. Don't let these drift from the code — [[08-features]] says this explicitly
@@ -38,7 +38,7 @@ and it applies to all of them.
   relying on prior training data, per `AGENTS.md`.
 - **No inline comments by convention** — this codebase explains itself through naming and through
   these docs, not code comments. If you need the "why" for something, it's more likely to live
-  here in `claude/` than in a comment near the code.
+  here in `.claude/docs/` than in a comment near the code.
 - **For anything spanning many files** (e.g. "how does the reveal flow work end to end") prefer
   the `Explore` agent over manual grepping — it's built for exactly this and won't burn main
   context on file contents you don't need to keep around.

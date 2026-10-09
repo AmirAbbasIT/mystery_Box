@@ -10,7 +10,7 @@ import type { Prisma } from "@/generated/prisma/client";
 
 /**
  * Storefront-facing read layer — Products/Categories/Themes/Prize Pools/Birthday
- * Packages/Seasonal Collections are all live in Postgres now (see claude/09-database-schema.md),
+ * Packages/Seasonal Collections are all live in Postgres now (see .claude/docs/09-database-schema.md),
  * replacing the equivalent src/data/*.ts mock arrays for the pages that have been wired up.
  * Deliberately separate from src/admin/services/*.ts: those return admin-shaped records for CRUD
  * screens; these return the exact same Product/Category/Theme/PrizePool/BirthdayPackage/

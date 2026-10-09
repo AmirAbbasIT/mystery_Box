@@ -49,13 +49,13 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // /contact merged into /about (About & Contact) — see claude/08-features.md.
+      // /contact merged into /about (About & Contact) — see .claude/docs/08-features.md.
       { source: "/contact", destination: "/about", permanent: true },
     ];
   },
   images: {
     // Supabase Storage public URLs — product/category images uploaded via the admin panel's
-    // ImagePicker (src/admin/components/ImagePicker/). See claude/09-database-schema.md.
+    // ImagePicker (src/admin/components/ImagePicker/). See .claude/docs/09-database-schema.md.
     remotePatterns: [
       {
         protocol: "https",

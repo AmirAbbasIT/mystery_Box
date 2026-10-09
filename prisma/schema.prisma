@@ -1,8 +1,8 @@
-// Catalogue schema — Phase 2a. Matches claude/09-database-schema.md and the tables already
+// Catalogue schema — Phase 2a. Matches .claude/docs/09-database-schema.md and the tables already
 // created in Supabase Postgres. @map/@@map keep Prisma's camelCase field names mapped onto the
 // existing snake_case columns/tables rather than renaming anything in the database.
 // Orders/customers/custom_requests models are deliberately not included yet — see
-// claude/10-admin-panel.md's phased scope (2a catalogue, 2b custom-requests, 2c orders).
+// .claude/docs/10-admin-panel.md's phased scope (2a catalogue, 2b custom-requests, 2c orders).
 
 // Prisma 7: connection URLs live in prisma.config.ts (CLI/migrations) and are passed explicitly
 // to the driver adapter at runtime (src/lib/db/client.ts, shared by admin services and the
@@ -192,7 +192,7 @@ model SeasonalCollectionProduct {
 
 // Singleton — exactly one row ever exists (see src/admin/services/site-settings.service.ts's
 // get-or-create). Not a list-of-records entity, so it doesn't get the usual list/new/[id] admin
-// CRUD pattern — see claude/10-admin-panel.md.
+// CRUD pattern — see .claude/docs/10-admin-panel.md.
 // Shipping is charged per order: shippingFlatPence, waived once the basket subtotal reaches
 // freeShippingThresholdPence (null = never waived). Both 0/null = free shipping.
 model SiteSettings {
@@ -281,7 +281,7 @@ model RateLimitHit {
 }
 
 // Phase 2c — checkout/orders. Guest checkout only (no accounts/login — see
-// claude/10-admin-panel.md's Phase 2c note): Customer is a plain email-deduped record captured at
+// .claude/docs/10-admin-panel.md's Phase 2c note): Customer is a plain email-deduped record captured at
 // checkout time, not an authenticated entity. Orders are created only after PayPal confirms a
 // capture (src/lib/orders.ts), never optimistically, so a row here always means money was
 // captured (or is pending at PayPal — status "payment_pending"). paypalOrderId is unique so the
@@ -364,7 +364,7 @@ model OrderEmail {
 
 // productId is nullable + onDelete: SetNull deliberately — productName/unitPricePence are a
 // snapshot taken at order time, so deleting a Product later must not corrupt historic order
-// records (see claude/06-entities-data-model.md).
+// records (see .claude/docs/06-entities-data-model.md).
 model OrderItem {
   id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderId        String  @map("order_id") @db.Uuid

@@ -2,7 +2,7 @@
 
 ```
 mystery_box/
-├── claude/                     # this documentation folder (not .claude/, the tool config dir)
+├── .claude/docs/                     # this documentation folder (design memory — see 00-start-here)
 ├── public/
 │   ├── images/
 │   │   ├── products/            # placeholder SVG art per category/prize-pool/season
