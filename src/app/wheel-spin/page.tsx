@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 import { getWheelPrizePool } from "@/lib/catalogue";
 import { WheelSpinLoader } from "@/components/animations";
-import { PriceTag } from "@/components/product";
+import { AddToBasketButton } from "@/components/product";
 import { Accordion, AccordionItem } from "@/components/ui";
+import { formatPrice } from "@/lib/utils";
 import styles from "./page.module.scss";
 
 export const revalidate = 60;
@@ -39,11 +40,23 @@ export default async function WheelSpinPage() {
       <header className={styles.header}>
         <h1>{wheelPool.name}</h1>
         <p>
-          Try a free preview spin below — it&rsquo;s just for fun and uses the odds listed
-          underneath.
+          Every spin wins a prize. Buy a spin and it&rsquo;s drawn securely, using the
+          odds below, the moment you pay — then you spin to reveal it straight after
+          checkout and we post the prize to you.
         </p>
-        <PriceTag price={wheelPool.price} />
+        <AddToBasketButton
+          item={{
+            kind: "prize_pool",
+            id: wheelPool.id,
+            name: wheelPool.name,
+            price: wheelPool.price,
+            image: wheelPool.image,
+          }}
+          label={`Buy a Spin — ${formatPrice(wheelPool.price)}`}
+        />
       </header>
+
+      <h2 className={styles.previewHeading}>Try a free preview spin</h2>
 
       <div className={styles.wheelWrapper}>
         <WheelSpinLoader prizes={wheelPool.prizes} />

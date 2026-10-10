@@ -13,7 +13,13 @@ export interface OrderEmailData {
   orderNumber: string;
   customerName: string;
   placedAt: Date;
-  items: Array<{ name: string; quantity: number; unitPricePence: number }>;
+  items: Array<{
+    name: string;
+    quantity: number;
+    unitPricePence: number;
+    /** Wheel spins only — never set for egg packs, whose prizes are a physical surprise. */
+    wonPrizes?: string[];
+  }>;
   subtotalPence: number;
   couponCode: string | null;
   /** Item discount + shipping waived by a coupon. */
@@ -62,7 +68,7 @@ function trackPageUrl(shop: ShopDetails): string {
 
 function summaryRows(order: OrderEmailData): Array<[string, string]> {
   const rows: Array<[string, string]> = order.items.map((item) => [
-    `${item.quantity} × ${item.name}`,
+    `${item.quantity} × ${item.name}${item.wonPrizes?.length ? ` — won: ${item.wonPrizes.join(", ")}` : ""}`,
     money(item.unitPricePence * item.quantity),
   ]);
   if (order.discountPence > 0) {

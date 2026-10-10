@@ -46,3 +46,10 @@
     color: var(--color-secondary-dark);
   }
 }
+
+.previewHeading {
+  text-align: center;
+  font-family: var(--font-family-display);
+  font-size: rem(20px);
+  margin-bottom: var(--space-5);
+}

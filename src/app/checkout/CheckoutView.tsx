@@ -4,6 +4,7 @@ import { useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart/CartContext";
+import { cartKey } from "@/types/cart";
 import type { ShippingSettings } from "@/lib/shipping";
 import { calculateOrderTotals, type CouponPricing } from "@/lib/coupons";
 import {
@@ -136,7 +137,7 @@ export function CheckoutView({ paypalClientId, shipping }: CheckoutViewProps) {
       <h2>Order summary</h2>
       <ul className={styles.summaryItems}>
         {items.map((item) => (
-          <li key={item.productId} className={styles.summaryRow}>
+          <li key={cartKey(item)} className={styles.summaryRow}>
             <span>
               {item.quantity} × {item.name}
             </span>

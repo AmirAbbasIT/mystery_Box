@@ -8,7 +8,7 @@ import {
   useReducer,
   type ReactNode,
 } from "react";
-import type { CartItem } from "@/types/cart";
+import { cartKey, type CartItem } from "@/types/cart";
 
 const STORAGE_KEY = "mystery-picked-gifts-basket";
 /** Key used before the "Mystery Picked Gifts" rename — read once so existing baskets survive. */
@@ -16,8 +16,8 @@ const LEGACY_STORAGE_KEY = "mystery-packed-gifts-basket";
 
 type CartAction =
   | { type: "add"; item: Omit<CartItem, "quantity">; quantity: number }
-  | { type: "remove"; productId: string }
-  | { type: "setQuantity"; productId: string; quantity: number }
+  | { type: "remove"; key: string }
+  | { type: "setQuantity"; key: string; quantity: number }
   | { type: "clear" }
   | { type: "hydrate"; items: CartItem[] };
 
@@ -26,10 +26,11 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
     case "hydrate":
       return action.items;
     case "add": {
-      const existing = state.find((line) => line.productId === action.item.productId);
+      const key = cartKey(action.item);
+      const existing = state.find((line) => cartKey(line) === key);
       if (existing) {
         return state.map((line) =>
-          line.productId === action.item.productId
+          cartKey(line) === key
             ? { ...line, quantity: line.quantity + action.quantity }
             : line,
         );
@@ -37,15 +38,13 @@ function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
       return [...state, { ...action.item, quantity: action.quantity }];
     }
     case "remove":
-      return state.filter((line) => line.productId !== action.productId);
+      return state.filter((line) => cartKey(line) !== action.key);
     case "setQuantity":
       if (action.quantity <= 0) {
-        return state.filter((line) => line.productId !== action.productId);
+        return state.filter((line) => cartKey(line) !== action.key);
       }
       return state.map((line) =>
-        line.productId === action.productId
-          ? { ...line, quantity: action.quantity }
-          : line,
+        cartKey(line) === action.key ? { ...line, quantity: action.quantity } : line,
       );
     case "clear":
       // Bail out (same reference) if already empty — keeps a `clear()` called from a mount-only
@@ -63,8 +62,9 @@ interface CartContextValue {
   itemCount: number;
   subtotal: number;
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  setQuantity: (productId: string, quantity: number) => void;
+  /** `key` is cartKey(item). */
+  removeItem: (key: string) => void;
+  setQuantity: (key: string, quantity: number) => void;
   clear: () => void;
 }
 
@@ -78,6 +78,31 @@ function cartStateReducer(state: CartState, action: CartAction): CartState {
   if (action.type === "hydrate") return { items: action.items, isReady: true };
   const items = cartReducer(state.items, action);
   return items === state.items ? state : { ...state, items };
+}
+
+/**
+ * Saved baskets from before egg packs/wheel spins existed have { productId } lines — convert them
+ * so nobody's basket is lost; drop anything unrecognisable.
+ */
+function normaliseSavedLines(raw: unknown[]): CartItem[] {
+  const lines: CartItem[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const line = entry as Record<string, unknown>;
+    const kind = line.kind === "prize_pool" ? "prize_pool" : "product";
+    const id = typeof line.id === "string" ? line.id : line.productId;
+    if (typeof id !== "string" || typeof line.name !== "string") continue;
+    if (typeof line.price !== "number" || typeof line.quantity !== "number") continue;
+    lines.push({
+      kind,
+      id,
+      name: line.name,
+      price: line.price,
+      image: typeof line.image === "string" ? line.image : undefined,
+      quantity: line.quantity,
+    });
+  }
+  return lines;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -98,7 +123,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         window.localStorage.getItem(LEGACY_STORAGE_KEY);
       window.localStorage.removeItem(LEGACY_STORAGE_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) saved = parsed;
+      if (Array.isArray(parsed)) saved = normaliseSavedLines(parsed);
     } catch {
       // Corrupt or inaccessible storage — start with an empty basket.
     }
@@ -125,9 +150,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       itemCount,
       subtotal,
       addItem: (item, quantity = 1) => dispatch({ type: "add", item, quantity }),
-      removeItem: (productId) => dispatch({ type: "remove", productId }),
-      setQuantity: (productId, quantity) =>
-        dispatch({ type: "setQuantity", productId, quantity }),
+      removeItem: (key) => dispatch({ type: "remove", key }),
+      setQuantity: (key, quantity) => dispatch({ type: "setQuantity", key, quantity }),
       clear: () => dispatch({ type: "clear" }),
     };
   }, [items, isReady]);

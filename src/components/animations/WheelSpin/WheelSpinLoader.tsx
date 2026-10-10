@@ -15,8 +15,10 @@ const WheelSpin = dynamic(() => import("./WheelSpin").then((mod) => mod.WheelSpi
 
 interface WheelSpinLoaderProps {
   prizes: PrizeItem[];
+  /** Reveal mode — see WheelSpin. */
+  winners?: string[];
 }
 
-export function WheelSpinLoader({ prizes }: WheelSpinLoaderProps) {
-  return <WheelSpin prizes={prizes} />;
+export function WheelSpinLoader({ prizes, winners }: WheelSpinLoaderProps) {
+  return <WheelSpin prizes={prizes} winners={winners} />;
 }

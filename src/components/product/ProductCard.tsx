@@ -21,8 +21,8 @@ export function ProductCard({ product, themes }: ProductCardProps) {
 
   const handleAddToBasket = () => {
     addItem({
-      productId: product.id,
-      slug: product.slug,
+      kind: "product",
+      id: product.id,
       name: product.name,
       price: product.price,
       image: product.images[0]?.src,

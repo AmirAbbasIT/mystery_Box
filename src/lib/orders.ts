@@ -14,9 +14,11 @@ import {
 import { Prisma } from "@/generated/prisma/client";
 import type { CheckoutDetails } from "@/lib/checkout-details";
 import { generateOrderNumber } from "@/lib/order-number";
+import { drawPrize, totalWeight } from "@/lib/prize-draw";
 
 /**
- * Checkout write path. The browser only ever supplies (a) which products and how many plus the
+ * Checkout write path. The browser only ever supplies (a) which items (products, egg packs, wheel
+ * spins) and how many plus the
  * (server-validated) customer/delivery details, when the PayPal order is created, and (b) a PayPal
  * order ID to capture. Everything money-related — prices, shipping, totals — comes from the
  * database and PayPal's own API, never from the client; what gets recorded on the Order comes from
@@ -28,12 +30,22 @@ const MAX_QUANTITY_PER_LINE = 20;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAYPAL_ORDER_ID_PATTERN = /^[A-Z0-9]{10,40}$/;
 
+/**
+ * Snapshot of one basket line, stored in pending_checkouts.items. Lines saved before egg packs /
+ * wheel spins existed have no `type` and are products.
+ */
 interface PendingItem {
-  productId: string;
+  type?: "product" | "egg_pack" | "wheel_spin";
+  productId?: string;
+  prizePoolId?: string;
   productName: string;
   unitPricePence: number;
   quantity: number;
+  /** Prizes drawn per unit bought: eggs per pack for egg packs, 1 per wheel spin. */
+  drawsPerUnit?: number;
 }
+
+const itemType = (item: PendingItem) => item.type ?? "product";
 
 export type CheckoutResult<T> =
   | ({ ok: true } & T)
@@ -47,7 +59,12 @@ export type CheckoutResult<T> =
       unknownCoupon?: boolean;
     };
 
-/** Accepts only well-formed {productId, quantity} pairs; merges duplicate lines. */
+type BasketKind = "product" | "prize_pool";
+
+/**
+ * Accepts only well-formed {kind, id, quantity} lines (legacy {productId, quantity} = product);
+ * merges duplicates. Returns quantities keyed "kind:id".
+ */
 export function parseBasketRequest(input: unknown): Map<string, number> | null {
   if (!Array.isArray(input) || input.length === 0 || input.length > MAX_LINES)
     return null;
@@ -55,47 +72,87 @@ export function parseBasketRequest(input: unknown): Map<string, number> | null {
   const quantities = new Map<string, number>();
   for (const line of input) {
     if (typeof line !== "object" || line === null) return null;
-    const { productId, quantity } = line as { productId?: unknown; quantity?: unknown };
-    if (typeof productId !== "string" || !UUID_PATTERN.test(productId)) return null;
+    const { kind, id, productId, quantity } = line as Record<string, unknown>;
+    const lineKind: BasketKind | null =
+      kind === undefined || kind === "product"
+        ? "product"
+        : kind === "prize_pool"
+          ? "prize_pool"
+          : null;
+    const lineId = id ?? productId;
+    if (!lineKind || typeof lineId !== "string" || !UUID_PATTERN.test(lineId))
+      return null;
     if (typeof quantity !== "number" || !Number.isInteger(quantity) || quantity < 1)
       return null;
 
-    const merged = (quantities.get(productId) ?? 0) + quantity;
+    const key = `${lineKind}:${lineId}`;
+    const merged = (quantities.get(key) ?? 0) + quantity;
     if (merged > MAX_QUANTITY_PER_LINE) return null;
-    quantities.set(productId, merged);
+    quantities.set(key, merged);
   }
   return quantities;
 }
 
-/** Re-prices the basket from the DB (never the browser's prices) and checks stock/availability. */
+const UNAVAILABLE = "An item in your basket is no longer available — please remove it.";
+
+/**
+ * Re-prices the basket from the DB (never the browser's prices) and checks availability: product
+ * stock/active, and that egg packs / wheel spins still have a prize pool with drawable prizes.
+ */
 async function priceBasket(
   quantities: Map<string, number>,
 ): Promise<CheckoutResult<{ items: PendingItem[]; subtotalPence: number }>> {
-  const products = await getPrismaClient().product.findMany({
-    where: { id: { in: [...quantities.keys()] } },
-  });
+  const prisma = getPrismaClient();
+  const idsOf = (kind: BasketKind) =>
+    [...quantities.keys()]
+      .filter((key) => key.startsWith(`${kind}:`))
+      .map((key) => key.slice(kind.length + 1));
+
+  const [products, pools] = await Promise.all([
+    prisma.product.findMany({ where: { id: { in: idsOf("product") } } }),
+    prisma.prizePool.findMany({
+      where: { id: { in: idsOf("prize_pool") } },
+      include: { prizeItems: { select: { weight: true } } },
+    }),
+  ]);
   const productById = new Map(products.map((product) => [product.id, product]));
+  const poolById = new Map(pools.map((pool) => [pool.id, pool]));
 
   const items: PendingItem[] = [];
-  for (const [productId, quantity] of quantities) {
-    const product = productById.get(productId);
-    if (!product || !product.active) {
-      return {
-        ok: false,
-        error: "An item in your basket is no longer available — please remove it.",
-      };
+  for (const [key, quantity] of quantities) {
+    const [kind, id] = key.split(":") as [BasketKind, string];
+
+    if (kind === "product") {
+      const product = productById.get(id);
+      if (!product || !product.active) return { ok: false, error: UNAVAILABLE };
+      if (quantity > product.stock) {
+        return {
+          ok: false,
+          error: `Only ${product.stock} of "${product.name}" left in stock — please adjust the quantity.`,
+        };
+      }
+      items.push({
+        type: "product",
+        productId: id,
+        productName: product.name,
+        unitPricePence: product.pricePence,
+        quantity,
+      });
+      continue;
     }
-    if (quantity > product.stock) {
-      return {
-        ok: false,
-        error: `Only ${product.stock} of "${product.name}" left in stock — please adjust the quantity.`,
-      };
+
+    const pool = poolById.get(id);
+    const drawable = pool?.prizeItems.some((prize) => prize.weight.toNumber() > 0);
+    if (!pool || !drawable || (pool.kind !== "egg" && pool.kind !== "wheel")) {
+      return { ok: false, error: UNAVAILABLE };
     }
     items.push({
-      productId,
-      productName: product.name,
-      unitPricePence: product.pricePence,
+      type: pool.kind === "egg" ? "egg_pack" : "wheel_spin",
+      prizePoolId: id,
+      productName: pool.name,
+      unitPricePence: pool.pricePence,
       quantity,
+      drawsPerUnit: pool.kind === "egg" ? Math.max(1, pool.quantity ?? 1) : 1,
     });
   }
 
@@ -177,7 +234,7 @@ export async function startPayPalCheckout(
 
   const paypalOrder = await createPayPalOrder({
     items: items.map((item) => ({
-      sku: item.productId,
+      sku: item.productId ?? item.prizePoolId ?? "item",
       name: item.productName,
       unitPricePence: item.unitPricePence,
       quantity: item.quantity,
@@ -231,6 +288,48 @@ function amountMatches(
   pence: number,
 ) {
   return money?.currency_code === "GBP" && valueToPence(money.value) === pence;
+}
+
+/**
+ * Draws every egg / spin for one paid order line, inside the order's transaction, from the pool's
+ * current prizes and weights (the published odds). Prizes are snapshotted onto OrderPrize so later
+ * pool edits never change what an order won. Never throws for an empty pool — money has already
+ * been captured, so the order must still be recorded; staff see the line has no prizes drawn.
+ */
+async function drawPrizesForItem(
+  tx: Prisma.TransactionClient,
+  orderItemId: string,
+  item: PendingItem,
+): Promise<void> {
+  const prizes = (
+    await tx.prizeItem.findMany({
+      where: { prizePoolId: item.prizePoolId ?? "" },
+      select: { id: true, label: true, rarity: true, weight: true },
+    })
+  ).map((prize) => ({ ...prize, weight: prize.weight.toNumber() }));
+
+  const total = totalWeight(prizes);
+  if (total <= 0) {
+    console.error(
+      `No drawable prizes for order item ${orderItemId} (pool ${item.prizePoolId}).`,
+    );
+    return;
+  }
+
+  const draws = item.quantity * (item.drawsPerUnit ?? 1);
+  const rows = Array.from({ length: draws }, (_, index) => {
+    const prize = drawPrize(prizes);
+    return {
+      orderItemId,
+      prizeItemId: prize.id,
+      position: index + 1,
+      label: prize.label,
+      rarity: prize.rarity,
+      weight: prize.weight,
+      totalWeight: total,
+    };
+  });
+  await tx.orderPrize.createMany({ data: rows });
 }
 
 export interface CompletedCheckout {
@@ -323,17 +422,41 @@ export async function completePayPalCheckout(
       }
     }
 
-    const products = await prisma.product.findMany({
-      where: { id: { in: items.map((item) => item.productId) } },
-    });
+    const productItems = items.filter((item) => itemType(item) === "product");
+    const prizeLines = items.filter((item) => itemType(item) !== "product");
+    const [products, pools] = await Promise.all([
+      prisma.product.findMany({
+        where: { id: { in: productItems.map((item) => item.productId ?? "") } },
+      }),
+      prisma.prizePool.findMany({
+        where: { id: { in: prizeLines.map((item) => item.prizePoolId ?? "") } },
+        include: { prizeItems: { select: { weight: true } } },
+      }),
+    ]);
     const stockById = new Map(products.map((p) => [p.id, p.active ? p.stock : 0]));
-    const soldOut = items.find(
-      (item) => (stockById.get(item.productId) ?? 0) < item.quantity,
+    const soldOut = productItems.find(
+      (item) => (stockById.get(item.productId ?? "") ?? 0) < item.quantity,
     );
     if (soldOut) {
       return {
         ok: false,
         error: `Sorry — "${soldOut.productName}" sold out while you were paying. You have not been charged.`,
+      };
+    }
+    // Egg packs / spins: the prize pool must still exist with something to draw, or we couldn't
+    // honour the purchase — refuse before charging rather than after.
+    const drawablePools = new Set(
+      pools
+        .filter((pool) => pool.prizeItems.some((prize) => prize.weight.toNumber() > 0))
+        .map((pool) => pool.id),
+    );
+    const undrawable = prizeLines.find(
+      (item) => !drawablePools.has(item.prizePoolId ?? ""),
+    );
+    if (undrawable) {
+      return {
+        ok: false,
+        error: `Sorry — "${undrawable.productName}" is no longer available. You have not been charged.`,
       };
     }
 
@@ -417,9 +540,26 @@ export async function completePayPalCheckout(
             couponCode: pending.couponCode,
             discountPence: pending.discountPence,
             shippingDiscountPence: pending.shippingDiscountPence,
-            items: { create: items },
           },
         });
+
+        for (const item of items) {
+          const type = itemType(item);
+          const orderItem = await tx.orderItem.create({
+            data: {
+              orderId: created.id,
+              itemType: type,
+              productId: type === "product" ? (item.productId ?? null) : null,
+              prizePoolId: type === "product" ? null : (item.prizePoolId ?? null),
+              productName: item.productName,
+              unitPricePence: item.unitPricePence,
+              quantity: item.quantity,
+            },
+          });
+          if (type !== "product") {
+            await drawPrizesForItem(tx, orderItem.id, item);
+          }
+        }
 
         // The only place a coupon use is counted — after payment, in the same transaction that
         // records the order, so abandoned checkouts never use one up.
@@ -431,6 +571,7 @@ export async function completePayPalCheckout(
         }
 
         for (const item of items) {
+          if (itemType(item) !== "product" || !item.productId) continue;
           // updateMany (not update) so a since-deleted product is a silent no-op — stock
           // reconciliation is best-effort and must never block recording a captured payment.
           await tx.product.updateMany({

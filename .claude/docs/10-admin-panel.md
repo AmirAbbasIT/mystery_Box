@@ -352,6 +352,19 @@ Consumer Contracts Regs "durable medium" confirmation — trader name/address co
 `BUSINESS_LEGAL_NAME`/`BUSINESS_ADDRESS` in `src/lib/constants.ts` (placeholders until launch).
 To swap provider: add `providers/<name>.ts` implementing `EmailProvider`, add a case, change env.
 
+**Mystery Eggs & Wheel Spin checkout** (Oct 2026 — replaces "Shop Products only for v1"):
+basket lines are `{kind: "product" | "prize_pool", id}` (`src/types/cart.ts`; old saved
+`{productId}` baskets are normalised on load). Egg packs and spins are priced from `prize_pools` in
+`priceBasket()`, re-checked as drawable before capture, and their prizes are drawn **server-side
+at payment, inside the order transaction**, with a crypto RNG by the published weights
+(`src/lib/prize-draw.ts`) → `order_prizes`, snapshotting label/rarity/weight/total so pool edits
+never change past orders. Wheel results are revealed on the success page (the wheel lands on the
+drawn result — `WheelSpin` `winners` reveal mode) and listed in the confirmation email; **egg
+prizes are never shown to the customer** (physical surprise) — only in admin as the packing list.
+Coupons apply to the whole basket. `prize_items.stock` exists but isn't enforced yet; when it is,
+an out-of-stock prize must leave both the draw and the published odds. Legal note: every outcome
+should be worth at least the price, with no cash/cash-equivalent prizes (Gambling Act 2005).
+
 **Security headers** (`next.config.ts`): site-wide CSP limiting script/frame/connect origins to self
 + PayPal, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`.
 

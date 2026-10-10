@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type SubmitEvent } from "react";
-import type { CartItem } from "@/types/cart";
+import { toBasketRequest, type CartItem } from "@/types/cart";
 import { describeCoupon, type CouponPricing } from "@/lib/coupons";
 import { applyCouponAction } from "./actions";
 import styles from "./page.module.scss";
@@ -42,11 +42,7 @@ export function PromoCodeBox({ items, email, applied, onChange }: PromoCodeBoxPr
     setChecking(true);
     setError(null);
 
-    const result = await applyCouponAction(
-      items.map(({ productId, quantity }) => ({ productId, quantity })),
-      code,
-      email,
-    );
+    const result = await applyCouponAction(toBasketRequest(items), code, email);
 
     setChecking(false);
     if (result.ok) {

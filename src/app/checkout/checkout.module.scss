@@ -46,3 +46,40 @@
     letter-spacing: 0.04em;
   }
 }
+
+.reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block: var(--space-6);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-alt);
+
+  h2 {
+    font-family: var(--font-family-display);
+    font-size: rem(22px);
+  }
+}
+
+.revealList {
+  font-size: rem(14px);
+
+  summary {
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  ul {
+    list-style: none;
+    margin-top: var(--space-2);
+  }
+}
+
+.eggNote {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+}

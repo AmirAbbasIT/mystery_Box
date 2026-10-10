@@ -105,6 +105,7 @@ model PrizePool {
   updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   prizeItems PrizeItem[]
+  orderItems OrderItem[]
 
   @@map("prize_pools")
 }
@@ -116,8 +117,12 @@ model PrizeItem {
   rarity      String
   weight      Decimal @db.Decimal
   sortOrder   Int     @default(0) @map("sort_order")
+  // Reserved for prize inventory — not used yet (null = unlimited). When it's enforced, a prize
+  // at 0 must be excluded from draws AND from the published odds.
+  stock       Int?
 
-  prizePool PrizePool @relation(fields: [prizePoolId], references: [id], onDelete: Cascade)
+  prizePool   PrizePool    @relation(fields: [prizePoolId], references: [id], onDelete: Cascade)
+  orderPrizes OrderPrize[]
 
   @@index([prizePoolId])
   @@map("prize_items")
@@ -365,19 +370,48 @@ model OrderEmail {
 // productId is nullable + onDelete: SetNull deliberately — productName/unitPricePence are a
 // snapshot taken at order time, so deleting a Product later must not corrupt historic order
 // records (see .claude/docs/06-entities-data-model.md).
+// itemType: "product" | "egg_pack" | "wheel_spin". Egg packs and wheel spins reference their
+// prize pool (prizePoolId) and get their prizes drawn at payment (OrderPrize). productName is the
+// display-name snapshot for every type.
 model OrderItem {
   id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderId        String  @map("order_id") @db.Uuid
+  itemType       String  @default("product") @map("item_type")
   productId      String? @map("product_id") @db.Uuid
+  prizePoolId    String? @map("prize_pool_id") @db.Uuid
   productName    String  @map("product_name")
   unitPricePence Int     @map("unit_price_pence")
   quantity       Int
 
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  prizePool PrizePool?   @relation(fields: [prizePoolId], references: [id], onDelete: SetNull)
+  prizes    OrderPrize[]
 
   @@index([orderId])
   @@map("order_items")
+}
+
+// One drawn prize per egg / per spin, drawn server-side with a cryptographic RNG when payment is
+// recorded (src/lib/prize-draw.ts). label/rarity/weight/totalWeight are snapshots — prize pools
+// get edited (and their items recreated), but an order must keep what was actually won and the
+// odds it was drawn at. position = egg/spin number within the line (1-based).
+model OrderPrize {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderItemId String   @map("order_item_id") @db.Uuid
+  prizeItemId String?  @map("prize_item_id") @db.Uuid
+  position    Int
+  label       String
+  rarity      String
+  weight      Decimal  @db.Decimal
+  totalWeight Decimal  @map("total_weight") @db.Decimal
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  orderItem OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  prizeItem PrizeItem? @relation(fields: [prizeItemId], references: [id], onDelete: SetNull)
+
+  @@index([orderItemId])
+  @@map("order_prizes")
 }
 
 // Phase 2b — persists the birthday-builder form (CustomRequestForm), replacing its previous
