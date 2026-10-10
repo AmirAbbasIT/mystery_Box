@@ -1,48 +1,46 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { PublicReview } from "@/lib/reviews";
 import styles from "./Testimonials.module.scss";
 
-// Placeholder copy — replace with real, consented customer reviews before
-// launch. Publishing fabricated testimonials as genuine would breach UK
-// consumer protection / ASA rules on fake reviews.
-const TESTIMONIALS = [
-  {
-    name: "Chloe, Manchester",
-    quote: "The egg reveal genuinely made my little sister's birthday — she screamed at the golden egg!",
-    rating: 5,
-  },
-  {
-    name: "Priya, London",
-    quote: "Ordered the Y2K jewellery box for myself as a treat and it did not disappoint.",
-    rating: 5,
-  },
-  {
-    name: "Amelia, Leeds",
-    quote: "Booked the hen party box for six of us — such a fun way to kick off the night.",
-    rating: 5,
-  },
-];
+interface TestimonialsProps {
+  /** Published + featured reviews from Admin → Reviews. Nothing renders until there's one. */
+  reviews: PublicReview[];
+}
 
-export function Testimonials() {
+export function Testimonials({ reviews }: TestimonialsProps) {
+  if (reviews.length === 0) return null;
+
   return (
     <section className={styles.section}>
       <h2 className={styles.title}>Loved by our customers</h2>
       <div className={styles.grid}>
-        {TESTIMONIALS.map((testimonial, index) => (
+        {reviews.map((review, index) => (
           <motion.blockquote
-            key={testimonial.name}
+            key={review.id}
             className={styles.card}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.4, delay: index * 0.08, ease: [0.4, 0, 0.2, 1] }}
           >
-            <p className={styles.stars} aria-hidden="true">
-              {"★".repeat(testimonial.rating)}
+            <p
+              className={styles.stars}
+              role="img"
+              aria-label={`${review.rating} out of 5 stars`}
+            >
+              {"★".repeat(review.rating)}
+              {"☆".repeat(5 - review.rating)}
             </p>
-            <p className={styles.quote}>&ldquo;{testimonial.quote}&rdquo;</p>
-            <footer className={styles.author}>{testimonial.name}</footer>
+            <p className={styles.quote}>&ldquo;{review.body}&rdquo;</p>
+            <footer className={styles.author}>
+              {review.authorName}
+              {review.location ? `, ${review.location}` : ""}
+              {review.verifiedPurchase && (
+                <span className={styles.verified}> · Verified purchase</span>
+              )}
+            </footer>
           </motion.blockquote>
         ))}
       </div>

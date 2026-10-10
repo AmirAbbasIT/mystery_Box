@@ -5,16 +5,28 @@ import type { OrderStatus } from "@/types/order";
 
 /**
  * Read/status-update only — there is no createOrder/deleteOrder here on purpose. Orders are only
- * ever created by src/lib/orders.ts (PayPal checkout), matching claude/10-admin-panel.md's
+ * ever created by src/lib/orders.ts (PayPal checkout), matching .claude/docs/10-admin-panel.md's
  * Phase 2c scope: "no new business logic beyond what checkout already needs to write."
  */
 
+export interface OrderPrizeRecord {
+  position: number;
+  label: string;
+  rarity: string;
+  /** Odds it was drawn at, e.g. 6 = 6%. */
+  oddsPercent: number;
+}
+
 export interface OrderItemRecord {
   id: string;
+  /** "product" | "egg_pack" | "wheel_spin" */
+  itemType: string;
   productId: string | null;
   productName: string;
   unitPrice: number;
   quantity: number;
+  /** Drawn prizes (egg packs / wheel spins) — what to pack. */
+  prizes: OrderPrizeRecord[];
 }
 
 export interface OrderRecord {
@@ -50,7 +62,7 @@ export interface OrderRecord {
 
 const ORDER_INCLUDE = {
   customer: true,
-  items: true,
+  items: { include: { prizes: { orderBy: { position: "asc" } } } },
 } satisfies Prisma.OrderInclude;
 
 type OrderWithRelations = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
@@ -84,10 +96,20 @@ function toRecord(row: OrderWithRelations): OrderRecord {
     deliveredAt: row.deliveredAt?.toISOString() ?? null,
     items: row.items.map((item) => ({
       id: item.id,
+      itemType: item.itemType,
       productId: item.productId,
       productName: item.productName,
       unitPrice: item.unitPricePence / 100,
       quantity: item.quantity,
+      prizes: item.prizes.map((prize) => ({
+        position: prize.position,
+        label: prize.label,
+        rarity: prize.rarity,
+        oddsPercent:
+          prize.totalWeight.toNumber() > 0
+            ? (prize.weight.toNumber() / prize.totalWeight.toNumber()) * 100
+            : 0,
+      })),
     })),
     createdAt: row.createdAt.toISOString(),
   };

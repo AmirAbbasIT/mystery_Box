@@ -110,6 +110,11 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
   production domain), `pageMetadata()` for every public page (title, description, **per-page
   canonical**, Open Graph/Twitter incl. the share image), and JSON-LD builders. Canonicals are
   never set in the root layout — children would inherit the home page's canonical.
+- **Only Vercel Production is indexable** (`isIndexable()` in `src/lib/seo.ts`: `VERCEL_ENV ===
+  "production"` and `SITE_INDEXING !== "off"`). Preview (`dev.mysterypickedgifts.com`) and local get
+  robots.txt `Disallow: /`, an empty sitemap, site-wide `noindex` meta and an `X-Robots-Tag` header
+  (`next.config.ts` repeats the check). Set `SITE_INDEXING=off` in Production to hide the live site
+  until launch; changes need a redeploy.
 - **`app/robots.ts`** disallows `/admin` and `/api/`. Basket/checkout are *not* disallowed on
   purpose: they carry `noindex`, which crawlers can only see if allowed to fetch the page.
 - **Admin** is kept out three ways: robots.txt, `noindex,nofollow` metadata in
@@ -122,3 +127,16 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
   `Product`/`Offer` on category pages.
 - Category titles are title-cased + "Mystery Gift Boxes"; product images fall back to the product
   name when the admin alt text is empty.
+
+## Reviews
+
+Staff-entered for now (`/admin/reviews`; customer-submitted reviews are a later phase). UK law
+(DMCC Act 2024) bans fake reviews, so honesty is enforced in three layers — the form, the admin
+service (`publishBlocker()` in `src/lib/reviews.ts`) and DB CHECK constraints: a review can only be
+**published** with a real `source` (not `placeholder`) and `consent_confirmed`; only published
+reviews can be **featured**; rating 1–5. The site's original example testimonials are seeded as
+`placeholder` rows that can never be published. Storefront reads only published reviews and only
+public fields (`getFeaturedReviews()` → home "Loved by our customers", hidden when empty; product
+`reviews` → "Peek inside" modal). Linking an order number shows "Verified purchase". No review
+structured data yet — Google ignores self-serving reviews of your own business, and product
+review markup should wait for real volume.

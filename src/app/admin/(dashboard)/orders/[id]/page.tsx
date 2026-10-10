@@ -136,7 +136,27 @@ export default async function AdminOrderDetailPage({
         <tbody>
           {order.items.map((item) => (
             <tr key={item.id}>
-              <td>{item.productName}</td>
+              <td>
+                {item.productName}
+                {item.prizes.length > 0 && (
+                  <ol className={styles.prizeList}>
+                    {item.prizes.map((prize) => (
+                      <li key={prize.position}>
+                        {item.itemType === "egg_pack" ? "Egg" : "Spin"} {prize.position}:{" "}
+                        <strong>{prize.label}</strong>{" "}
+                        <span className={styles.prizeMeta}>
+                          ({prize.rarity}, {prize.oddsPercent.toFixed(1)}% chance)
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {item.itemType !== "product" && item.prizes.length === 0 && (
+                  <p className={styles.formError}>
+                    No prizes were drawn for this line — choose them by hand.
+                  </p>
+                )}
+              </td>
               <td>{item.quantity}</td>
               <td>{formatPrice(item.unitPrice)}</td>
               <td>{formatPrice(item.unitPrice * item.quantity)}</td>

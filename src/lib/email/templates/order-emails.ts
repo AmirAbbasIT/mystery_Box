@@ -13,7 +13,13 @@ export interface OrderEmailData {
   orderNumber: string;
   customerName: string;
   placedAt: Date;
-  items: Array<{ name: string; quantity: number; unitPricePence: number }>;
+  items: Array<{
+    name: string;
+    quantity: number;
+    unitPricePence: number;
+    /** Wheel spins only — never set for egg packs, whose prizes are a physical surprise. */
+    wonPrizes?: string[];
+  }>;
   subtotalPence: number;
   couponCode: string | null;
   /** Item discount + shipping waived by a coupon. */
@@ -56,13 +62,14 @@ function deliveryLines(order: OrderEmailData): string[] {
   ].filter((line): line is string => Boolean(line));
 }
 
-function trackPageUrl(shop: ShopDetails): string {
-  return `${shop.siteUrl}/track`;
+/** Tracking page with the order number pre-filled (the email address is never put in a URL). */
+function trackPageUrl(shop: ShopDetails, orderNumber: string): string {
+  return `${shop.siteUrl}/track?order=${encodeURIComponent(orderNumber)}`;
 }
 
 function summaryRows(order: OrderEmailData): Array<[string, string]> {
   const rows: Array<[string, string]> = order.items.map((item) => [
-    `${item.quantity} × ${item.name}`,
+    `${item.quantity} × ${item.name}${item.wonPrizes?.length ? ` — won: ${item.wonPrizes.join(", ")}` : ""}`,
     money(item.unitPricePence * item.quantity),
   ]);
   if (order.discountPence > 0) {
@@ -110,10 +117,21 @@ export function renderOrderConfirmation(
 ): RenderedEmail {
   const subject = `Order confirmed — ${order.orderNumber}`;
   const placed = dateFormatter.format(order.placedAt);
-  const cancellation =
-    "You can cancel your order within 14 days of receiving it, without giving a reason — just email us with your order number. " +
-    "For hygiene reasons, sealed beauty and cosmetic items can't be returned once unsealed, and custom-made orders can't be cancelled once we've started making them. " +
-    "If something arrives faulty or damaged, contact us and we'll put it right.";
+  const policyUrl = `${shop.siteUrl}/legal-notice#returns`;
+
+  // Cancellation-rights text — temporarily hidden; only the policy link is shown for now.
+  // TODO before taking real orders: re-enable it (uncomment this and the two blocks marked
+  // "cancellation" below). The Consumer Contracts Regulations expect these rights in the
+  // confirmation itself — a web page link doesn't count as a durable medium.
+  // const cancellation =
+  //   "You can cancel your order within 14 days of receiving it, without giving a reason — just email us with your order number. " +
+  //   "For health and hygiene reasons, sealed beauty and cosmetic items and food or sweets can't be returned once opened, and custom-made orders can't be cancelled once we've started making them. " +
+  //   "If something arrives faulty or damaged, contact us and we'll put it right.";
+  //
+  // cancellation (HTML) — goes where the policy link paragraph is:
+  //   <p style="margin:0 0 4px;font-weight:700">Your right to cancel</p>
+  //   <p style="margin:0 0 8px;font-size:13px;color:#4b4352">${escapeHtml(cancellation)}
+  //   Full details: <a href="${escapeHtml(policyUrl)}" style="color:#7a3dc2">returns &amp; refunds policy</a>.</p>
 
   const html = layout(
     shop,
@@ -125,10 +143,8 @@ export function renderOrderConfirmation(
     ${summaryHtml(order)}
     <p style="margin:0 0 4px;font-weight:700">Delivering to</p>
     <p style="margin:0 0 20px">${deliveryLines(order).map(escapeHtml).join("<br>")}</p>
-    <p style="margin:0 0 20px">${button(trackPageUrl(shop), "Track your order")}</p>
-    <p style="margin:0 0 4px;font-weight:700">Your right to cancel</p>
-    <p style="margin:0 0 8px;font-size:13px;color:#4b4352">${escapeHtml(cancellation)}
-    Full details: <a href="${escapeHtml(`${shop.siteUrl}/legal-notice`)}" style="color:#7a3dc2">returns &amp; refunds policy</a>.</p>`,
+    <p style="margin:0 0 20px">${button(trackPageUrl(shop, order.orderNumber), "Track your order")}</p>
+    <p style="margin:0;font-size:13px"><a href="${escapeHtml(policyUrl)}" style="color:#7a3dc2">Returns &amp; refunds policy</a></p>`,
   );
 
   const text = [
@@ -144,11 +160,10 @@ export function renderOrderConfirmation(
     "Delivering to:",
     ...deliveryLines(order),
     "",
-    `Track your order: ${trackPageUrl(shop)}`,
+    `Track your order: ${trackPageUrl(shop, order.orderNumber)}`,
     "",
-    "Your right to cancel",
-    cancellation,
-    `Full details: ${shop.siteUrl}/legal-notice`,
+    // cancellation (text): "Your right to cancel", cancellation,
+    `Returns & refunds policy: ${policyUrl}`,
     "",
     textFooter(shop),
   ].join("\n");
@@ -175,7 +190,7 @@ export function renderOrderDispatched(
     ${order.trackingUrl ? `<p style="margin:0 0 20px">${button(order.trackingUrl, `Track with ${carrier}`)}</p>` : ""}
     <p style="margin:0 0 4px;font-weight:700">Delivering to</p>
     <p style="margin:0 0 20px">${deliveryLines(order).map(escapeHtml).join("<br>")}</p>
-    <p style="margin:0">You can also check your order any time on our <a href="${escapeHtml(trackPageUrl(shop))}" style="color:#7a3dc2">tracking page</a> with your order number and email.</p>`,
+    <p style="margin:0">You can also check your order any time on our <a href="${escapeHtml(trackPageUrl(shop, order.orderNumber))}" style="color:#7a3dc2">tracking page</a> with your order number and email.</p>`,
   );
 
   const text = [
@@ -188,7 +203,7 @@ export function renderOrderDispatched(
     "Delivering to:",
     ...deliveryLines(order),
     "",
-    `Check your order any time: ${trackPageUrl(shop)}`,
+    `Check your order any time: ${trackPageUrl(shop, order.orderNumber)}`,
     "",
     textFooter(shop),
   ]

@@ -1,8 +1,8 @@
-// Catalogue schema — Phase 2a. Matches claude/09-database-schema.md and the tables already
+// Catalogue schema — Phase 2a. Matches .claude/docs/09-database-schema.md and the tables already
 // created in Supabase Postgres. @map/@@map keep Prisma's camelCase field names mapped onto the
 // existing snake_case columns/tables rather than renaming anything in the database.
 // Orders/customers/custom_requests models are deliberately not included yet — see
-// claude/10-admin-panel.md's phased scope (2a catalogue, 2b custom-requests, 2c orders).
+// .claude/docs/10-admin-panel.md's phased scope (2a catalogue, 2b custom-requests, 2c orders).
 
 // Prisma 7: connection URLs live in prisma.config.ts (CLI/migrations) and are passed explicitly
 // to the driver adapter at runtime (src/lib/db/client.ts, shared by admin services and the
@@ -66,6 +66,8 @@ model Product {
   seasonalCollections SeasonalCollectionProduct[]
   orderItems          OrderItem[]
 
+  reviews Review[]
+
   @@index([categoryId])
   @@map("products")
 }
@@ -105,6 +107,7 @@ model PrizePool {
   updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   prizeItems PrizeItem[]
+  orderItems OrderItem[]
 
   @@map("prize_pools")
 }
@@ -116,8 +119,12 @@ model PrizeItem {
   rarity      String
   weight      Decimal @db.Decimal
   sortOrder   Int     @default(0) @map("sort_order")
+  // Reserved for prize inventory — not used yet (null = unlimited). When it's enforced, a prize
+  // at 0 must be excluded from draws AND from the published odds.
+  stock       Int?
 
-  prizePool PrizePool @relation(fields: [prizePoolId], references: [id], onDelete: Cascade)
+  prizePool   PrizePool    @relation(fields: [prizePoolId], references: [id], onDelete: Cascade)
+  orderPrizes OrderPrize[]
 
   @@index([prizePoolId])
   @@map("prize_items")
@@ -192,7 +199,7 @@ model SeasonalCollectionProduct {
 
 // Singleton — exactly one row ever exists (see src/admin/services/site-settings.service.ts's
 // get-or-create). Not a list-of-records entity, so it doesn't get the usual list/new/[id] admin
-// CRUD pattern — see claude/10-admin-panel.md.
+// CRUD pattern — see .claude/docs/10-admin-panel.md.
 // Shipping is charged per order: shippingFlatPence, waived once the basket subtotal reaches
 // freeShippingThresholdPence (null = never waived). Both 0/null = free shipping.
 model SiteSettings {
@@ -281,7 +288,7 @@ model RateLimitHit {
 }
 
 // Phase 2c — checkout/orders. Guest checkout only (no accounts/login — see
-// claude/10-admin-panel.md's Phase 2c note): Customer is a plain email-deduped record captured at
+// .claude/docs/10-admin-panel.md's Phase 2c note): Customer is a plain email-deduped record captured at
 // checkout time, not an authenticated entity. Orders are created only after PayPal confirms a
 // capture (src/lib/orders.ts), never optimistically, so a row here always means money was
 // captured (or is pending at PayPal — status "payment_pending"). paypalOrderId is unique so the
@@ -336,6 +343,7 @@ model Order {
   coupon   Coupon?      @relation(fields: [couponId], references: [id], onDelete: Restrict)
   items    OrderItem[]
   emails   OrderEmail[]
+  reviews  Review[]
 
   @@index([customerId])
   @@index([couponId])
@@ -364,20 +372,49 @@ model OrderEmail {
 
 // productId is nullable + onDelete: SetNull deliberately — productName/unitPricePence are a
 // snapshot taken at order time, so deleting a Product later must not corrupt historic order
-// records (see claude/06-entities-data-model.md).
+// records (see .claude/docs/06-entities-data-model.md).
+// itemType: "product" | "egg_pack" | "wheel_spin". Egg packs and wheel spins reference their
+// prize pool (prizePoolId) and get their prizes drawn at payment (OrderPrize). productName is the
+// display-name snapshot for every type.
 model OrderItem {
   id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderId        String  @map("order_id") @db.Uuid
+  itemType       String  @default("product") @map("item_type")
   productId      String? @map("product_id") @db.Uuid
+  prizePoolId    String? @map("prize_pool_id") @db.Uuid
   productName    String  @map("product_name")
   unitPricePence Int     @map("unit_price_pence")
   quantity       Int
 
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  prizePool PrizePool?   @relation(fields: [prizePoolId], references: [id], onDelete: SetNull)
+  prizes    OrderPrize[]
 
   @@index([orderId])
   @@map("order_items")
+}
+
+// One drawn prize per egg / per spin, drawn server-side with a cryptographic RNG when payment is
+// recorded (src/lib/prize-draw.ts). label/rarity/weight/totalWeight are snapshots — prize pools
+// get edited (and their items recreated), but an order must keep what was actually won and the
+// odds it was drawn at. position = egg/spin number within the line (1-based).
+model OrderPrize {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderItemId String   @map("order_item_id") @db.Uuid
+  prizeItemId String?  @map("prize_item_id") @db.Uuid
+  position    Int
+  label       String
+  rarity      String
+  weight      Decimal  @db.Decimal
+  totalWeight Decimal  @map("total_weight") @db.Decimal
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  orderItem OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  prizeItem PrizeItem? @relation(fields: [prizeItemId], references: [id], onDelete: SetNull)
+
+  @@index([orderItemId])
+  @@map("order_prizes")
 }
 
 // Phase 2b — persists the birthday-builder form (CustomRequestForm), replacing its previous
@@ -399,4 +436,35 @@ model CustomRequest {
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("custom_requests")
+}
+
+// Customer reviews, entered by staff for now (customer-submitted reviews come later). UK law
+// (DMCC Act 2024) bans fake reviews outright, so the data model enforces honesty:
+//  - source records where a review came from; "placeholder" = example copy that must never show.
+//  - consentConfirmed = the customer agreed to it being published.
+//  - published is only allowed with a real source + consent (enforced in the admin service);
+//    featured (home page) additionally requires published.
+// orderId links a review to a real order → shown as "Verified purchase".
+model Review {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorName       String   @map("author_name")
+  location         String?
+  rating           Int
+  body             String
+  productId        String?  @map("product_id") @db.Uuid
+  orderId          String?  @map("order_id") @db.Uuid
+  source           String
+  reviewedOn       DateTime @map("reviewed_on") @db.Date
+  consentConfirmed Boolean  @default(false) @map("consent_confirmed")
+  published        Boolean  @default(false)
+  featured         Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order   Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([published, featured])
+  @@map("reviews")
 }

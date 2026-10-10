@@ -4,7 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 
 /**
  * Business logic for the Products catalogue entity — the layer between admin Server Actions
- * and the DB client, per claude/10-admin-panel.md's Layering section. Nothing above this file
+ * and the DB client, per .claude/docs/10-admin-panel.md's Layering section. Nothing above this file
  * should import Prisma directly.
  */
 

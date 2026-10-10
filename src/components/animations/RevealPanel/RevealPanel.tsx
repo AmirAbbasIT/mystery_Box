@@ -7,7 +7,8 @@ import styles from "./RevealPanel.module.scss";
 
 interface RevealPanelProps {
   prize: PrizeItem;
-  onReset: () => void;
+  /** Omit to show the result with no follow-up button (e.g. the last paid spin). */
+  onReset?: () => void;
   resetLabel?: string;
 }
 
@@ -18,14 +19,21 @@ const RARITY_LABEL: Record<PrizeItem["rarity"], string> = {
   jackpot: "Jackpot!",
 };
 
-const RARITY_TONE: Record<PrizeItem["rarity"], "neutral" | "secondary" | "primary" | "accent"> = {
+const RARITY_TONE: Record<
+  PrizeItem["rarity"],
+  "neutral" | "secondary" | "primary" | "accent"
+> = {
   common: "neutral",
   uncommon: "secondary",
   rare: "primary",
   jackpot: "accent",
 };
 
-export function RevealPanel({ prize, onReset, resetLabel = "Go again" }: RevealPanelProps) {
+export function RevealPanel({
+  prize,
+  onReset,
+  resetLabel = "Go again",
+}: RevealPanelProps) {
   return (
     <motion.div
       className={styles.panel}
@@ -36,9 +44,11 @@ export function RevealPanel({ prize, onReset, resetLabel = "Go again" }: RevealP
       <Badge tone={RARITY_TONE[prize.rarity]}>{RARITY_LABEL[prize.rarity]}</Badge>
       <p className={styles.wonLabel}>You won</p>
       <p className={styles.prizeName}>{prize.label}</p>
-      <Button variant="outline" size="sm" onClick={onReset}>
-        {resetLabel}
-      </Button>
+      {onReset && (
+        <Button variant="outline" size="sm" onClick={onReset}>
+          {resetLabel}
+        </Button>
+      )}
     </motion.div>
   );
 }

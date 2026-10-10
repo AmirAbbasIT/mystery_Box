@@ -1,14 +1,24 @@
 export const SITE_NAME = "Mystery Picked Gifts";
 export const SITE_TAGLINE = "Surprise gift boxes, eggs & wheel spin prizes";
 
-// TODO: replace with the real inbox before launch.
-export const CONTACT_EMAIL = "hello@mysteryboxuk.example";
+// Shop contact address: shown in the footer, About page, Legal Notice and order emails. Should
+// match EMAIL_REPLY_TO in the deployment env so customer replies land in the same inbox.
+export const CONTACT_EMAIL = "mysterypickedgifts26@gmail.com";
 
-// TODO: fill in before launch — order confirmation emails must show the trader's legal name and
-// geographic address (Consumer Contracts Regulations 2013). Sole trader: your own name trading as
-// the shop name; limited company: the registered company name.
-export const BUSINESS_LEGAL_NAME = "Mystery Picked Gifts";
-export const BUSINESS_ADDRESS = "[Business address — set in src/lib/constants.ts]";
+// Trader identity, shown on the Legal Notice page, in order confirmation emails and in search
+// engine data. Legally required: a sole trader using a business name must show their own name and
+// a geographic address (Companies Act 2006 business-names rules; Consumer Contracts Regulations
+// 2013; E-Commerce Regulations 2002).
+export const BUSINESS_OWNER_NAME = "Kerry Michell";
+export const BUSINESS_LEGAL_NAME = `${BUSINESS_OWNER_NAME} trading as ${SITE_NAME}`;
+export const BUSINESS_POSTAL_ADDRESS = {
+  street: "351 Bowthorpe Road",
+  town: "Norwich",
+  county: "Norfolk",
+  postcode: "NR5 8AF",
+  country: "GB",
+} as const;
+export const BUSINESS_ADDRESS = `${BUSINESS_POSTAL_ADDRESS.street}, ${BUSINESS_POSTAL_ADDRESS.town}, ${BUSINESS_POSTAL_ADDRESS.county} ${BUSINESS_POSTAL_ADDRESS.postcode}`;
 
 export interface NavLink {
   label: string;

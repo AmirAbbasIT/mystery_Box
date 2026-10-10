@@ -18,7 +18,10 @@
   height: 100%;
   border-radius: 50%;
   position: relative;
-  box-shadow: var(--shadow-lg), 0 0 0 8px var(--color-surface-alt), 0 0 0 12px var(--color-accent);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 8px var(--color-surface-alt),
+    0 0 0 12px var(--color-accent);
   will-change: transform;
 }
 

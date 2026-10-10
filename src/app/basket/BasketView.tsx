@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/cart/CartContext";
+import { cartKey } from "@/types/cart";
 import { calculateShippingPence, type ShippingSettings } from "@/lib/shipping";
 import styles from "./page.module.scss";
 
@@ -31,7 +32,7 @@ export function BasketView({ shipping }: BasketViewProps) {
     <div className={styles.layout}>
       <div className={styles.lines}>
         {items.map((item) => (
-          <div key={item.productId} className={styles.line}>
+          <div key={cartKey(item)} className={styles.line}>
             <div className={styles.imageWrapper}>
               {item.image ? (
                 <Image
@@ -52,7 +53,7 @@ export function BasketView({ shipping }: BasketViewProps) {
                   type="button"
                   className={styles.quantityButton}
                   aria-label={`Decrease quantity of ${item.name}`}
-                  onClick={() => setQuantity(item.productId, item.quantity - 1)}
+                  onClick={() => setQuantity(cartKey(item), item.quantity - 1)}
                 >
                   −
                 </button>
@@ -61,7 +62,7 @@ export function BasketView({ shipping }: BasketViewProps) {
                   type="button"
                   className={styles.quantityButton}
                   aria-label={`Increase quantity of ${item.name}`}
-                  onClick={() => setQuantity(item.productId, item.quantity + 1)}
+                  onClick={() => setQuantity(cartKey(item), item.quantity + 1)}
                 >
                   +
                 </button>
@@ -75,7 +76,7 @@ export function BasketView({ shipping }: BasketViewProps) {
               <button
                 type="button"
                 className={styles.removeButton}
-                onClick={() => removeItem(item.productId)}
+                onClick={() => removeItem(cartKey(item))}
               >
                 Remove
               </button>

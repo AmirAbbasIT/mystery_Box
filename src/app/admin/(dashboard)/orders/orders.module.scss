@@ -253,3 +253,13 @@
     cursor: not-allowed;
   }
 }
+
+.prizeList {
+  margin: var(--space-2) 0 0 var(--space-4);
+  font-size: rem(13px);
+  line-height: 1.6;
+}
+
+.prizeMeta {
+  color: var(--color-text-muted);
+}

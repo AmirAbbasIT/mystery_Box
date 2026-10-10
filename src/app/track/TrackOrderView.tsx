@@ -116,7 +116,11 @@ function TrackedOrderCard({
   );
 }
 
-export function TrackOrderView() {
+export function TrackOrderView({
+  initialOrderNumber = "",
+}: {
+  initialOrderNumber?: string;
+}) {
   const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
@@ -142,6 +146,7 @@ export function TrackOrderView() {
         <input
           id="orderNumber"
           name="orderNumber"
+          defaultValue={initialOrderNumber}
           placeholder="e.g. MPG-7K3Q9X"
           autoComplete="off"
           autoCapitalize="characters"
@@ -150,7 +155,14 @@ export function TrackOrderView() {
       </div>
       <div className={styles.field}>
         <label htmlFor="email">Email used at checkout</label>
-        <input id="email" name="email" type="email" autoComplete="email" required />
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          autoFocus={Boolean(initialOrderNumber)}
+        />
       </div>
 
       {error && (

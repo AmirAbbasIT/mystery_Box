@@ -3,6 +3,8 @@ import { getPrismaClient } from "@/lib/db/client";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui";
+import { WheelSpinLoader } from "@/components/animations";
+import type { PrizeItem, PrizeRarity } from "@/types";
 import { ClearCartOnSuccess } from "./ClearCartOnSuccess";
 import styles from "../checkout.module.scss";
 
@@ -27,9 +29,41 @@ export default async function CheckoutSuccessPage({
     orderId && UUID_PATTERN.test(orderId)
       ? await getPrismaClient().order.findUnique({
           where: { id: orderId },
-          include: { items: true },
+          include: {
+            items: {
+              include: {
+                prizes: { orderBy: { position: "asc" } },
+                prizePool: { include: { prizeItems: { orderBy: { sortOrder: "asc" } } } },
+              },
+            },
+          },
         })
       : null;
+
+  // Wheel spins are revealed here (drawn server-side at payment — the wheel just lands on the
+  // result). Egg prizes are deliberately not shown: they're a surprise inside the physical egg.
+  const wheelReveals = (order?.items ?? [])
+    .filter((item) => item.itemType === "wheel_spin" && item.prizes.length > 0)
+    .map((item) => {
+      const segments: PrizeItem[] = (item.prizePool?.prizeItems ?? []).map((prize) => ({
+        id: prize.id,
+        label: prize.label,
+        rarity: prize.rarity as PrizeRarity,
+        weight: prize.weight.toNumber(),
+      }));
+      // Match by id, falling back to label if the pool's items were re-saved since payment.
+      const winners = item.prizes.map(
+        (won) =>
+          segments.find((segment) => segment.id === won.prizeItemId)?.id ??
+          segments.find((segment) => segment.label === won.label)?.id,
+      );
+      return {
+        item,
+        segments,
+        winners: winners.every(Boolean) ? (winners as string[]) : null,
+      };
+    });
+  const hasEggs = order?.items.some((item) => item.itemType === "egg_pack") ?? false;
 
   return (
     <div className={styles.page}>
@@ -43,14 +77,46 @@ export default async function CheckoutSuccessPage({
           </p>
           <p>
             Keep it safe — you can check your order&rsquo;s progress any time on our{" "}
-            <Link href="/track">Track your order</Link> page with this number and your
-            email.
+            <Link href={`/track?order=${encodeURIComponent(order.orderNumber)}`}>
+              Track your order
+            </Link>{" "}
+            page with this number and your email.
           </p>
           <p>
             {order.status === "payment_pending"
               ? "PayPal is still processing your payment — we'll start packing as soon as it clears."
-              : "Your payment is confirmed — PayPal will email you a receipt."}
+              : "Your payment is confirmed — your order confirmation is on its way by email."}
           </p>
+
+          {wheelReveals.map(({ item, segments, winners }) => (
+            <section key={item.id} className={styles.reveal}>
+              <h2>Spin to reveal your prize{item.prizes.length > 1 ? "s" : ""}!</h2>
+              <p>
+                {item.prizes.length > 1
+                  ? `You've got ${item.prizes.length} spins — `
+                  : ""}
+                your result was drawn securely when you paid. Press SPIN to see it.
+              </p>
+              {winners && <WheelSpinLoader prizes={segments} winners={winners} />}
+              <details className={styles.revealList} open={!winners}>
+                <summary>Just show me</summary>
+                <ul>
+                  {item.prizes.map((prize) => (
+                    <li key={prize.id}>
+                      Spin {prize.position}: <strong>{prize.label}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </section>
+          ))}
+
+          {hasEggs && (
+            <p className={styles.eggNote}>
+              🥚 Your mystery eggs will be hand-packed with their prizes inside — the
+              surprise is yours to crack open when they arrive!
+            </p>
+          )}
           <ul className={styles.itemList}>
             {order.items.map((item) => (
               <li key={item.id}>

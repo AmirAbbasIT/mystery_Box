@@ -54,7 +54,10 @@ async function loadOrder(
 ): Promise<{ to: string; status: string; data: OrderEmailData } | null> {
   const order = await getPrismaClient().order.findUnique({
     where: { id: orderId },
-    include: { customer: true, items: true },
+    include: {
+      customer: true,
+      items: { include: { prizes: { orderBy: { position: "asc" } } } },
+    },
   });
   if (!order) return null;
 
@@ -74,6 +77,11 @@ async function loadOrder(
         name: item.productName,
         quantity: item.quantity,
         unitPricePence: item.unitPricePence,
+        // Wheel results were already revealed online; egg prizes stay a surprise.
+        wonPrizes:
+          item.itemType === "wheel_spin"
+            ? item.prizes.map((prize) => prize.label)
+            : undefined,
       })),
       subtotalPence: itemsPence,
       couponCode: order.couponCode,

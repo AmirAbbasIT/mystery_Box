@@ -7,7 +7,7 @@ import {
   TrustSignals,
 } from "@/components/home";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { getCategories, getShopExtrasPricing } from "@/lib/catalogue";
+import { getCategories, getFeaturedReviews, getShopExtrasPricing } from "@/lib/catalogue";
 import { organizationJsonLd, pageMetadata, websiteJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -19,9 +19,10 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default async function HomePage() {
-  const [categories, pricing] = await Promise.all([
+  const [categories, pricing, reviews] = await Promise.all([
     getCategories(),
     getShopExtrasPricing(),
+    getFeaturedReviews(),
   ]);
 
   return (
@@ -30,7 +31,7 @@ export default async function HomePage() {
       <Hero />
       <ShopByCategory categories={categories} pricing={pricing} />
       <HowItWorks />
-      <Testimonials />
+      <Testimonials reviews={reviews} />
       <TrustSignals />
     </>
   );

@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { label: "Custom Requests", href: "/admin/custom-requests" },
   { label: "Orders", href: "/admin/orders" },
   { label: "Coupons", href: "/admin/coupons" },
+  { label: "Reviews", href: "/admin/reviews" },
   { label: "Customers", href: "/admin/customers" },
   { label: "Settings", href: "/admin/settings" },
 ];

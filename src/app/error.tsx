@@ -7,7 +7,7 @@ import styles from "./error.module.scss";
 
 /**
  * Root error boundary — Products/Categories/Themes are DB-backed now (see
- * claude/09-database-schema.md), so storefront pages can hit a transient DB error the way
+ * .claude/docs/09-database-schema.md), so storefront pages can hit a transient DB error the way
  * src/app/admin/error.tsx already handles for the admin panel. Same dev-vs-production nuance
  * applies: error.message is the real message only in development; production shows a generic
  * message + digest to avoid leaking internals.

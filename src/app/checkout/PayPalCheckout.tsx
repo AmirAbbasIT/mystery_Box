@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
-import type { CartItem } from "@/types/cart";
+import { toBasketRequest, type CartItem } from "@/types/cart";
 import type { BillingAddress, CheckoutDetails } from "@/lib/checkout-details";
 import { capturePayPalOrderAction, createPayPalOrderAction } from "./actions";
 import styles from "./page.module.scss";
@@ -113,7 +113,7 @@ export function PayPalCheckout({
   const createOrderFor = (source: PaymentSource) => async () => {
     setError(null);
     const result = await createPayPalOrderAction(
-      itemsRef.current.map(({ productId, quantity }) => ({ productId, quantity })),
+      toBasketRequest(itemsRef.current),
       detailsRef.current,
       source,
       couponCodeRef.current,

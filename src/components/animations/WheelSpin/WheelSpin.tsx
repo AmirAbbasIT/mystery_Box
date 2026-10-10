@@ -10,6 +10,11 @@ import styles from "./WheelSpin.module.scss";
 
 interface WheelSpinProps {
   prizes: PrizeItem[];
+  /**
+   * Reveal mode (after purchase): prize ids already drawn server-side, landed on in order — one
+   * per SPIN press. Omit for the free preview, which picks locally and can spin forever.
+   */
+  winners?: string[];
 }
 
 const SEGMENT_COLORS = [
@@ -24,12 +29,15 @@ const SEGMENT_COLORS = [
 const EXTRA_SPINS = 6;
 const SPIN_DURATION = 4.2;
 
-export function WheelSpin({ prizes }: WheelSpinProps) {
+export function WheelSpin({ prizes, winners }: WheelSpinProps) {
   const discRef = useRef<HTMLDivElement>(null);
   const rotationRef = useRef(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<PrizeItem | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [revealIndex, setRevealIndex] = useState(0);
+  const isReveal = winners !== undefined;
+  const remaining = isReveal ? winners.length - revealIndex : Infinity;
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const segmentAngle = 360 / prizes.length;
@@ -50,13 +58,19 @@ export function WheelSpin({ prizes }: WheelSpinProps) {
   };
 
   const handleSpin = async () => {
-    if (isSpinning) return;
+    if (isSpinning || remaining <= 0) return;
+
+    // Reveal mode never chooses: it lands on the prize the server already drew at payment.
+    const winner = isReveal
+      ? prizes.find((prize) => prize.id === winners[revealIndex])
+      : pickWeighted(prizes);
+    if (!winner) return;
+    if (isReveal) setRevealIndex((index) => index + 1);
 
     setIsSpinning(true);
     setResult(null);
     setAnnouncement("Spinning the wheel…");
 
-    const winner = pickWeighted(prizes);
     const winnerPosition = prizes.findIndex((prize) => prize.id === winner.id);
     const targetSegmentCenter = winnerPosition * segmentAngle + segmentAngle / 2;
 
@@ -93,7 +107,9 @@ export function WheelSpin({ prizes }: WheelSpinProps) {
               <span
                 key={prize.id}
                 className={styles.segmentLabel}
-                style={{ transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-118px)` }}
+                style={{
+                  transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-118px)`,
+                }}
               >
                 {prize.label}
               </span>
@@ -104,20 +120,29 @@ export function WheelSpin({ prizes }: WheelSpinProps) {
           type="button"
           className={styles.hub}
           onClick={handleSpin}
-          disabled={isSpinning}
+          disabled={isSpinning || remaining <= 0}
           aria-describedby="wheel-spin-status"
         >
-          {isSpinning ? "…" : "SPIN"}
+          {isSpinning ? "…" : remaining <= 0 ? "✓" : "SPIN"}
         </button>
       </div>
 
-      <div id="wheel-spin-status" role="status" aria-live="polite" className={styles.srOnly}>
+      <div
+        id="wheel-spin-status"
+        role="status"
+        aria-live="polite"
+        className={styles.srOnly}
+      >
         {announcement}
       </div>
 
       {result && (
         <div className={styles.resultArea}>
-          <RevealPanel prize={result} onReset={() => setResult(null)} resetLabel="Spin again" />
+          <RevealPanel
+            prize={result}
+            onReset={remaining > 0 ? () => setResult(null) : undefined}
+            resetLabel={isReveal ? `Next spin (${remaining} left)` : "Spin again"}
+          />
         </div>
       )}
     </div>
