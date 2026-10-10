@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BUSINESS_ADDRESS, CONTACT_EMAIL, SITE_NAME } from "@/lib/constants";
+import { BUSINESS_POSTAL_ADDRESS, CONTACT_EMAIL, SITE_NAME } from "@/lib/constants";
 
 /**
  * SEO helpers shared by every public page, robots.ts and sitemap.ts.
@@ -19,6 +19,17 @@ export function getSiteUrl(): string {
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : "http://localhost:3000");
   return configured.replace(/\/+$/, "");
+}
+
+/**
+ * Whether search engines may index this deployment: only Vercel *Production*, and only while
+ * SITE_INDEXING isn't "off" (use that to keep production hidden until launch day). Preview
+ * deployments (dev.mysterypickedgifts.com) and local dev are never indexable. Applied in
+ * robots.ts, sitemap.ts, the root layout's robots meta, and an X-Robots-Tag header
+ * (next.config.ts repeats this check — keep the two in sync).
+ */
+export function isIndexable(): boolean {
+  return process.env.VERCEL_ENV === "production" && process.env.SITE_INDEXING !== "off";
 }
 
 export function absoluteUrl(path: string): string {
@@ -78,9 +89,8 @@ export function serializeJsonLd(data: object): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
-/** Business identity for search engines. The address is left out until a real one is set. */
+/** Business identity for search engines. */
 export function organizationJsonLd(): object {
-  const hasAddress = !BUSINESS_ADDRESS.startsWith("[");
   return {
     "@context": "https://schema.org",
     "@type": "OnlineStore",
@@ -91,7 +101,14 @@ export function organizationJsonLd(): object {
     email: CONTACT_EMAIL,
     areaServed: "GB",
     currenciesAccepted: "GBP",
-    ...(hasAddress ? { address: BUSINESS_ADDRESS } : {}),
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: BUSINESS_POSTAL_ADDRESS.street,
+      addressLocality: BUSINESS_POSTAL_ADDRESS.town,
+      addressRegion: BUSINESS_POSTAL_ADDRESS.county,
+      postalCode: BUSINESS_POSTAL_ADDRESS.postcode,
+      addressCountry: BUSINESS_POSTAL_ADDRESS.country,
+    },
   };
 }
 

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getPrismaClient } from "@/lib/db/client";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, isIndexable } from "@/lib/seo";
 
 /**
  * /sitemap.xml — every public, indexable page. Category pages come from the DB, so a category
@@ -58,6 +58,9 @@ async function categoryEntries(): Promise<MetadataRoute.Sitemap> {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Never advertise pages of a non-indexable deployment (e.g. dev.mysterypickedgifts.com).
+  if (!isIndexable()) return [];
+
   const staticEntries: MetadataRoute.Sitemap = STATIC_PAGES.map(({ path, ...rest }) => ({
     url: absoluteUrl(path),
     ...rest,

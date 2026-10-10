@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SkipToContent } from "@/components/layout/SkipToContent";
 import { getActiveColorPaletteId } from "@/lib/site-settings";
 import { CartProvider } from "@/lib/cart/CartContext";
-import { getSiteUrl } from "@/lib/seo";
+import { getSiteUrl, isIndexable } from "@/lib/seo";
 import "./globals.scss";
 
 export const revalidate = 60;
@@ -26,6 +26,9 @@ const bodyFont = Nunito_Sans({
 // never here, or every page without its own would inherit the home page's canonical.
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
+  // Non-production deployments are noindex site-wide. Pages that set their own robots (basket,
+  // checkout, admin) are noindex anyway.
+  ...(isIndexable() ? {} : { robots: { index: false, follow: false } }),
   applicationName: "Mystery Picked Gifts",
   openGraph: { type: "website", siteName: "Mystery Picked Gifts", locale: "en_GB" },
   twitter: { card: "summary_large_image" },

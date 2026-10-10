@@ -110,10 +110,21 @@ export function renderOrderConfirmation(
 ): RenderedEmail {
   const subject = `Order confirmed — ${order.orderNumber}`;
   const placed = dateFormatter.format(order.placedAt);
-  const cancellation =
-    "You can cancel your order within 14 days of receiving it, without giving a reason — just email us with your order number. " +
-    "For hygiene reasons, sealed beauty and cosmetic items can't be returned once unsealed, and custom-made orders can't be cancelled once we've started making them. " +
-    "If something arrives faulty or damaged, contact us and we'll put it right.";
+  const policyUrl = `${shop.siteUrl}/legal-notice#returns`;
+
+  // Cancellation-rights text — temporarily hidden; only the policy link is shown for now.
+  // TODO before taking real orders: re-enable it (uncomment this and the two blocks marked
+  // "cancellation" below). The Consumer Contracts Regulations expect these rights in the
+  // confirmation itself — a web page link doesn't count as a durable medium.
+  // const cancellation =
+  //   "You can cancel your order within 14 days of receiving it, without giving a reason — just email us with your order number. " +
+  //   "For health and hygiene reasons, sealed beauty and cosmetic items and food or sweets can't be returned once opened, and custom-made orders can't be cancelled once we've started making them. " +
+  //   "If something arrives faulty or damaged, contact us and we'll put it right.";
+  //
+  // cancellation (HTML) — goes where the policy link paragraph is:
+  //   <p style="margin:0 0 4px;font-weight:700">Your right to cancel</p>
+  //   <p style="margin:0 0 8px;font-size:13px;color:#4b4352">${escapeHtml(cancellation)}
+  //   Full details: <a href="${escapeHtml(policyUrl)}" style="color:#7a3dc2">returns &amp; refunds policy</a>.</p>
 
   const html = layout(
     shop,
@@ -126,9 +137,7 @@ export function renderOrderConfirmation(
     <p style="margin:0 0 4px;font-weight:700">Delivering to</p>
     <p style="margin:0 0 20px">${deliveryLines(order).map(escapeHtml).join("<br>")}</p>
     <p style="margin:0 0 20px">${button(trackPageUrl(shop), "Track your order")}</p>
-    <p style="margin:0 0 4px;font-weight:700">Your right to cancel</p>
-    <p style="margin:0 0 8px;font-size:13px;color:#4b4352">${escapeHtml(cancellation)}
-    Full details: <a href="${escapeHtml(`${shop.siteUrl}/legal-notice`)}" style="color:#7a3dc2">returns &amp; refunds policy</a>.</p>`,
+    <p style="margin:0;font-size:13px"><a href="${escapeHtml(policyUrl)}" style="color:#7a3dc2">Returns &amp; refunds policy</a></p>`,
   );
 
   const text = [
@@ -146,9 +155,8 @@ export function renderOrderConfirmation(
     "",
     `Track your order: ${trackPageUrl(shop)}`,
     "",
-    "Your right to cancel",
-    cancellation,
-    `Full details: ${shop.siteUrl}/legal-notice`,
+    // cancellation (text): "Your right to cancel", cancellation,
+    `Returns & refunds policy: ${policyUrl}`,
     "",
     textFooter(shop),
   ].join("\n");

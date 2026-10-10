@@ -110,6 +110,11 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
   production domain), `pageMetadata()` for every public page (title, description, **per-page
   canonical**, Open Graph/Twitter incl. the share image), and JSON-LD builders. Canonicals are
   never set in the root layout — children would inherit the home page's canonical.
+- **Only Vercel Production is indexable** (`isIndexable()` in `src/lib/seo.ts`: `VERCEL_ENV ===
+  "production"` and `SITE_INDEXING !== "off"`). Preview (`dev.mysterypickedgifts.com`) and local get
+  robots.txt `Disallow: /`, an empty sitemap, site-wide `noindex` meta and an `X-Robots-Tag` header
+  (`next.config.ts` repeats the check). Set `SITE_INDEXING=off` in Production to hide the live site
+  until launch; changes need a redeploy.
 - **`app/robots.ts`** disallows `/admin` and `/api/`. Basket/checkout are *not* disallowed on
   purpose: they carry `noindex`, which crawlers can only see if allowed to fetch the page.
 - **Admin** is kept out three ways: robots.txt, `noindex,nofollow` metadata in

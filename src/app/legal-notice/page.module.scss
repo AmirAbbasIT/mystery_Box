@@ -22,16 +22,32 @@
     margin-bottom: var(--space-2);
   }
 
-  p {
+  h3 {
+    font-size: rem(15px);
+    margin-block: var(--space-4) var(--space-1);
+  }
+
+  p,
+  li,
+  address {
     color: var(--color-text-muted);
     line-height: 1.7;
   }
-}
 
-.placeholderNotice {
-  padding: var(--space-4);
-  background-color: var(--color-accent);
-  color: var(--color-text);
-  border-radius: var(--radius-md);
-  font-weight: 600;
+  p + p,
+  p + address {
+    margin-top: var(--space-2);
+  }
+
+  ul {
+    padding-left: var(--space-5);
+  }
+
+  address {
+    font-style: normal;
+  }
+
+  section {
+    scroll-margin-top: var(--space-8);
+  }
 }

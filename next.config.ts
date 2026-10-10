@@ -22,6 +22,11 @@ const contentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+// Same rule as isIndexable() in src/lib/seo.ts: only Vercel Production (and not SITE_INDEXING=off)
+// may be indexed. Evaluated at build time, which is per-deployment on Vercel.
+const isIndexable =
+  process.env.VERCEL_ENV === "production" && process.env.SITE_INDEXING !== "off";
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
@@ -45,6 +50,16 @@ const nextConfig: NextConfig = {
         source: "/(admin|api)(.*)",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
+      // Non-production deployments: noindex every response, including images and files that
+      // can't carry a <meta> tag.
+      ...(isIndexable
+        ? []
+        : [
+            {
+              source: "/(.*)",
+              headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+            },
+          ]),
     ];
   },
   async redirects() {
