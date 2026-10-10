@@ -66,6 +66,8 @@ model Product {
   seasonalCollections SeasonalCollectionProduct[]
   orderItems          OrderItem[]
 
+  reviews Review[]
+
   @@index([categoryId])
   @@map("products")
 }
@@ -341,6 +343,7 @@ model Order {
   coupon   Coupon?      @relation(fields: [couponId], references: [id], onDelete: Restrict)
   items    OrderItem[]
   emails   OrderEmail[]
+  reviews  Review[]
 
   @@index([customerId])
   @@index([couponId])
@@ -433,4 +436,35 @@ model CustomRequest {
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("custom_requests")
+}
+
+// Customer reviews, entered by staff for now (customer-submitted reviews come later). UK law
+// (DMCC Act 2024) bans fake reviews outright, so the data model enforces honesty:
+//  - source records where a review came from; "placeholder" = example copy that must never show.
+//  - consentConfirmed = the customer agreed to it being published.
+//  - published is only allowed with a real source + consent (enforced in the admin service);
+//    featured (home page) additionally requires published.
+// orderId links a review to a real order → shown as "Verified purchase".
+model Review {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorName       String   @map("author_name")
+  location         String?
+  rating           Int
+  body             String
+  productId        String?  @map("product_id") @db.Uuid
+  orderId          String?  @map("order_id") @db.Uuid
+  source           String
+  reviewedOn       DateTime @map("reviewed_on") @db.Date
+  consentConfirmed Boolean  @default(false) @map("consent_confirmed")
+  published        Boolean  @default(false)
+  featured         Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order   Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([published, featured])
+  @@map("reviews")
 }

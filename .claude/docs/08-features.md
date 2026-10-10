@@ -127,3 +127,16 @@ generate a PIN hash, then `npm run dev` and visit `/admin/login`.
   `Product`/`Offer` on category pages.
 - Category titles are title-cased + "Mystery Gift Boxes"; product images fall back to the product
   name when the admin alt text is empty.
+
+## Reviews
+
+Staff-entered for now (`/admin/reviews`; customer-submitted reviews are a later phase). UK law
+(DMCC Act 2024) bans fake reviews, so honesty is enforced in three layers — the form, the admin
+service (`publishBlocker()` in `src/lib/reviews.ts`) and DB CHECK constraints: a review can only be
+**published** with a real `source` (not `placeholder`) and `consent_confirmed`; only published
+reviews can be **featured**; rating 1–5. The site's original example testimonials are seeded as
+`placeholder` rows that can never be published. Storefront reads only published reviews and only
+public fields (`getFeaturedReviews()` → home "Loved by our customers", hidden when empty; product
+`reviews` → "Peek inside" modal). Linking an order number shows "Verified purchase". No review
+structured data yet — Google ignores self-serving reviews of your own business, and product
+review markup should wait for real volume.

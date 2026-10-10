@@ -1,6 +1,7 @@
 import { getPrismaClient } from "@/lib/db/client";
 import type { Product, ProductImage, AgeSuitability } from "@/types/product";
 import { cache } from "react";
+import type { PublicReview } from "@/lib/reviews";
 import type { Category } from "@/types/category";
 import type { Theme } from "@/types/theme";
 import type { PrizePool } from "@/types/prize-pool";
@@ -18,10 +19,39 @@ import type { Prisma } from "@/generated/prisma/client";
  * shape changes — only their data source changed.
  */
 
+// Only published reviews ever leave the DB for the storefront (placeholders/drafts never do).
+const PUBLIC_REVIEW_SELECT = {
+  id: true,
+  authorName: true,
+  location: true,
+  rating: true,
+  body: true,
+  orderId: true,
+} satisfies Prisma.ReviewSelect;
+
+type PublicReviewRow = Prisma.ReviewGetPayload<{ select: typeof PUBLIC_REVIEW_SELECT }>;
+
+function toPublicReview(row: PublicReviewRow): PublicReview {
+  return {
+    id: row.id,
+    authorName: row.authorName,
+    location: row.location,
+    rating: row.rating,
+    body: row.body,
+    verifiedPurchase: row.orderId !== null,
+  };
+}
+
 const PRODUCT_INCLUDE = {
   category: true,
   images: { orderBy: { sortOrder: "asc" } },
   themes: true,
+  reviews: {
+    where: { published: true },
+    select: PUBLIC_REVIEW_SELECT,
+    orderBy: { reviewedOn: "desc" },
+    take: 5,
+  },
 } satisfies Prisma.ProductInclude;
 
 type ProductWithRelations = Prisma.ProductGetPayload<{ include: typeof PRODUCT_INCLUDE }>;
@@ -42,7 +72,19 @@ function toProduct(row: ProductWithRelations): Product {
     whatCouldBeInside: row.whatCouldBeInside,
     featured: row.featured,
     seasonal: row.seasonal,
+    reviews: row.reviews.map(toPublicReview),
   };
+}
+
+/** Published reviews staff marked as featured — the home page's "Loved by our customers". */
+export async function getFeaturedReviews(limit = 6): Promise<PublicReview[]> {
+  const rows = await getPrismaClient().review.findMany({
+    where: { published: true, featured: true },
+    select: PUBLIC_REVIEW_SELECT,
+    orderBy: { reviewedOn: "desc" },
+    take: limit,
+  });
+  return rows.map(toPublicReview);
 }
 
 export async function getProducts(): Promise<Product[]> {
@@ -67,7 +109,11 @@ export async function getCategories(): Promise<Category[]> {
   const prisma = getPrismaClient();
   const [categories, minPrices] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),
-    prisma.product.groupBy({ by: ["categoryId"], where: { active: true }, _min: { pricePence: true } }),
+    prisma.product.groupBy({
+      by: ["categoryId"],
+      where: { active: true },
+      _min: { pricePence: true },
+    }),
   ]);
 
   const priceFromByCategoryId = new Map(
@@ -105,7 +151,8 @@ export async function getShopExtrasPricing(): Promise<ShopExtrasPricing> {
     prisma.birthdayPackage.aggregate({ _min: { priceFromPence: true } }),
   ]);
 
-  const toPounds = (pence: number | null | undefined) => (pence == null ? null : pence / 100);
+  const toPounds = (pence: number | null | undefined) =>
+    pence == null ? null : pence / 100;
   return {
     eggsFrom: toPounds(eggs._min.pricePence),
     wheelSpin: wheel?.price ?? null,
@@ -128,7 +175,9 @@ const PRIZE_POOL_INCLUDE = {
   prizeItems: { orderBy: { sortOrder: "asc" } },
 } satisfies Prisma.PrizePoolInclude;
 
-type PrizePoolWithItems = Prisma.PrizePoolGetPayload<{ include: typeof PRIZE_POOL_INCLUDE }>;
+type PrizePoolWithItems = Prisma.PrizePoolGetPayload<{
+  include: typeof PRIZE_POOL_INCLUDE;
+}>;
 
 function toPrizePool(row: PrizePoolWithItems): PrizePool {
   return {

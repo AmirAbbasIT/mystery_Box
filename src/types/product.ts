@@ -1,3 +1,4 @@
+import type { PublicReview } from "@/lib/reviews";
 export type AgeSuitability = "kids" | "teens" | "adults" | "all-ages";
 
 export interface ProductImage {
@@ -23,4 +24,6 @@ export interface Product {
   whatCouldBeInside: string[];
   featured?: boolean;
   seasonal?: boolean;
+  /** Published reviews about this product (newest first, up to 5). */
+  reviews?: PublicReview[];
 }

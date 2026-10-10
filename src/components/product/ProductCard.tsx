@@ -94,6 +94,29 @@ export function ProductCard({ product, themes }: ProductCardProps) {
         <p className={styles.peekDisclaimer}>
           Contents are randomised — exact items vary by box and are not guaranteed.
         </p>
+        {product.reviews && product.reviews.length > 0 && (
+          <section className={styles.reviews} aria-label="Customer reviews">
+            <h3 className={styles.reviewsTitle}>What customers say</h3>
+            {product.reviews.map((review) => (
+              <blockquote key={review.id} className={styles.review}>
+                <p
+                  className={styles.reviewStars}
+                  role="img"
+                  aria-label={`${review.rating} out of 5 stars`}
+                >
+                  {"★".repeat(review.rating)}
+                  {"☆".repeat(5 - review.rating)}
+                </p>
+                <p>&ldquo;{review.body}&rdquo;</p>
+                <footer className={styles.reviewAuthor}>
+                  {review.authorName}
+                  {review.location ? `, ${review.location}` : ""}
+                  {review.verifiedPurchase && " · Verified purchase"}
+                </footer>
+              </blockquote>
+            ))}
+          </section>
+        )}
         <Button
           className={styles.addButton}
           onClick={handleAddToBasket}

@@ -110,3 +110,33 @@
   width: 100%;
   margin-top: var(--space-5);
 }
+
+.reviews {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.reviewsTitle {
+  font-size: rem(15px);
+}
+
+.review {
+  margin: 0;
+  font-size: rem(14px);
+  color: var(--color-text);
+}
+
+.reviewStars {
+  color: var(--color-accent-dark);
+}
+
+.reviewAuthor {
+  margin-top: var(--space-1);
+  font-size: rem(12px);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
