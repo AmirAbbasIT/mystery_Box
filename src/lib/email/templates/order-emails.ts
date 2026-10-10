@@ -62,8 +62,9 @@ function deliveryLines(order: OrderEmailData): string[] {
   ].filter((line): line is string => Boolean(line));
 }
 
-function trackPageUrl(shop: ShopDetails): string {
-  return `${shop.siteUrl}/track`;
+/** Tracking page with the order number pre-filled (the email address is never put in a URL). */
+function trackPageUrl(shop: ShopDetails, orderNumber: string): string {
+  return `${shop.siteUrl}/track?order=${encodeURIComponent(orderNumber)}`;
 }
 
 function summaryRows(order: OrderEmailData): Array<[string, string]> {
@@ -142,7 +143,7 @@ export function renderOrderConfirmation(
     ${summaryHtml(order)}
     <p style="margin:0 0 4px;font-weight:700">Delivering to</p>
     <p style="margin:0 0 20px">${deliveryLines(order).map(escapeHtml).join("<br>")}</p>
-    <p style="margin:0 0 20px">${button(trackPageUrl(shop), "Track your order")}</p>
+    <p style="margin:0 0 20px">${button(trackPageUrl(shop, order.orderNumber), "Track your order")}</p>
     <p style="margin:0;font-size:13px"><a href="${escapeHtml(policyUrl)}" style="color:#7a3dc2">Returns &amp; refunds policy</a></p>`,
   );
 
@@ -159,7 +160,7 @@ export function renderOrderConfirmation(
     "Delivering to:",
     ...deliveryLines(order),
     "",
-    `Track your order: ${trackPageUrl(shop)}`,
+    `Track your order: ${trackPageUrl(shop, order.orderNumber)}`,
     "",
     // cancellation (text): "Your right to cancel", cancellation,
     `Returns & refunds policy: ${policyUrl}`,
@@ -189,7 +190,7 @@ export function renderOrderDispatched(
     ${order.trackingUrl ? `<p style="margin:0 0 20px">${button(order.trackingUrl, `Track with ${carrier}`)}</p>` : ""}
     <p style="margin:0 0 4px;font-weight:700">Delivering to</p>
     <p style="margin:0 0 20px">${deliveryLines(order).map(escapeHtml).join("<br>")}</p>
-    <p style="margin:0">You can also check your order any time on our <a href="${escapeHtml(trackPageUrl(shop))}" style="color:#7a3dc2">tracking page</a> with your order number and email.</p>`,
+    <p style="margin:0">You can also check your order any time on our <a href="${escapeHtml(trackPageUrl(shop, order.orderNumber))}" style="color:#7a3dc2">tracking page</a> with your order number and email.</p>`,
   );
 
   const text = [
@@ -202,7 +203,7 @@ export function renderOrderDispatched(
     "Delivering to:",
     ...deliveryLines(order),
     "",
-    `Check your order any time: ${trackPageUrl(shop)}`,
+    `Check your order any time: ${trackPageUrl(shop, order.orderNumber)}`,
     "",
     textFooter(shop),
   ]

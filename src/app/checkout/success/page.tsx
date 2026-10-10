@@ -77,8 +77,10 @@ export default async function CheckoutSuccessPage({
           </p>
           <p>
             Keep it safe — you can check your order&rsquo;s progress any time on our{" "}
-            <Link href="/track">Track your order</Link> page with this number and your
-            email.
+            <Link href={`/track?order=${encodeURIComponent(order.orderNumber)}`}>
+              Track your order
+            </Link>{" "}
+            page with this number and your email.
           </p>
           <p>
             {order.status === "payment_pending"

@@ -10,14 +10,23 @@ export const metadata: Metadata = pageMetadata({
   path: "/track",
 });
 
-export default function TrackOrderPage() {
+interface TrackOrderPageProps {
+  searchParams: Promise<{ order?: string }>;
+}
+
+/** /track?order=MPG-XXXXXX (from order emails / the success page) pre-fills the order number. */
+export default async function TrackOrderPage({ searchParams }: TrackOrderPageProps) {
+  const { order } = await searchParams;
+  const initialOrderNumber =
+    typeof order === "string" ? order.trim().toUpperCase().slice(0, 20) : "";
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>Track your order</h1>
         <p>Enter your order number and the email you used at checkout.</p>
       </header>
-      <TrackOrderView />
+      <TrackOrderView initialOrderNumber={initialOrderNumber} />
     </div>
   );
 }
